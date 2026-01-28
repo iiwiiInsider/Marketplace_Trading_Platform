@@ -1,0 +1,2649 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
+  <title>PIM AR Wallet — Fresh Build</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+  <script type="importmap">
+    {
+      "imports": {
+        "web3": "https://esm.sh/web3@4.16.0"
+      }
+    }
+  </script>
+  <style>
+    :root {
+      --brand: #FC6D26;
+      --brand2: #E24329;
+      --bg: #0a0a0f;
+      --panel: rgba(16,16,22,0.72);
+      --mercuryA: rgba(255,255,255,0.20);
+      --mercuryB: rgba(255,255,255,0.08);
+      --mercuryC: rgba(255,255,255,0.04);
+    }
+    body {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      background: var(--bg);
+      color: #f8fafc;
+      height: 100vh;
+      overflow: hidden;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .bg {
+      position: fixed;
+      inset: 0;
+      z-index: 0;
+      background:
+        radial-gradient(1200px 800px at 70% 10%, rgba(252,109,38,0.16), rgba(10,10,15,0) 55%),
+        radial-gradient(900px 700px at 20% 25%, rgba(14,165,233,0.10), rgba(10,10,15,0) 52%),
+        linear-gradient(180deg, #06060a 0%, #0a0a0f 55%, #07070a 100%);
+      overflow: hidden;
+    }
+    .bg::before {
+      content: '';
+      position: absolute;
+      inset: -20%;
+      background:
+        radial-gradient(2px 2px at 12% 18%, rgba(255,255,255,0.75) 0 40%, rgba(255,255,255,0) 60%),
+        radial-gradient(1.5px 1.5px at 22% 42%, rgba(255,255,255,0.55) 0 40%, rgba(255,255,255,0) 60%),
+        radial-gradient(1.2px 1.2px at 78% 28%, rgba(255,255,255,0.60) 0 40%, rgba(255,255,255,0) 60%),
+        radial-gradient(1.6px 1.6px at 58% 16%, rgba(255,255,255,0.55) 0 40%, rgba(255,255,255,0) 60%),
+        radial-gradient(1.1px 1.1px at 44% 36%, rgba(255,255,255,0.45) 0 40%, rgba(255,255,255,0) 60%),
+        radial-gradient(1.3px 1.3px at 9% 62%, rgba(255,255,255,0.45) 0 40%, rgba(255,255,255,0) 60%),
+        radial-gradient(1.2px 1.2px at 88% 58%, rgba(255,255,255,0.50) 0 40%, rgba(255,255,255,0) 60%),
+        radial-gradient(1.1px 1.1px at 66% 46%, rgba(255,255,255,0.40) 0 40%, rgba(255,255,255,0) 60%);
+      opacity: 0.7;
+      pointer-events: none;
+    }
+    .glass {
+      background: var(--panel);
+      border: 1px solid rgba(255,255,255,0.12);
+      box-shadow: 0 28px 80px rgba(0,0,0,0.55);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+    }
+
+    /* Popup skin: liquid mercury / high reflectivity */
+    .popupGlass {
+      background:
+        radial-gradient(120% 160% at 14% 0%, rgba(255,255,255,0.22), rgba(255,255,255,0.03) 55%, rgba(255,255,255,0.02) 100%),
+        radial-gradient(140% 120% at 90% 20%, rgba(255,255,255,0.14), rgba(255,255,255,0.02) 60%),
+        linear-gradient(180deg, rgba(255,255,255,0.10), rgba(255,255,255,0.04));
+      border: 1px solid rgba(255,255,255,0.18);
+      box-shadow:
+        0 36px 120px rgba(0,0,0,0.68),
+        0 0 0 1px rgba(255,255,255,0.10) inset,
+        0 0 44px rgba(252,109,38,0.12);
+      backdrop-filter: blur(20px) saturate(1.25);
+      -webkit-backdrop-filter: blur(20px) saturate(1.25);
+      position: relative;
+      overflow: hidden;
+    }
+    .popupGlass::before {
+      content: '';
+      position: absolute;
+      inset: -2px;
+      border-radius: inherit;
+      background:
+        radial-gradient(80% 40% at 18% 8%, rgba(255,255,255,0.34), rgba(255,255,255,0) 70%),
+        linear-gradient(90deg, rgba(255,255,255,0.00), rgba(255,255,255,0.12), rgba(255,255,255,0.00));
+      opacity: 0.9;
+      pointer-events: none;
+      mix-blend-mode: screen;
+      filter: blur(0.2px);
+    }
+    .popupGlass::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      border-radius: inherit;
+      background:
+        radial-gradient(110% 120% at 70% 120%, rgba(252,109,38,0.14), rgba(252,109,38,0) 60%);
+      opacity: 0.85;
+      pointer-events: none;
+    }
+    .glassSoft {
+      box-shadow:
+        0 28px 80px rgba(0,0,0,0.55),
+        0 0 0 1px rgba(255,255,255,0.06) inset,
+        0 0 40px rgba(252,109,38,0.10);
+    }
+    /* Button system (pill / glass) */
+    .btn, .btn2 {
+      position: relative;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      border-radius: 9999px;
+      font-weight: 900;
+      letter-spacing: .14em;
+      text-transform: uppercase;
+      font-size: 10px;
+      user-select: none;
+      -webkit-user-select: none;
+      cursor: pointer;
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      box-shadow:
+        0 18px 46px rgba(0,0,0,0.40),
+        0 0 0 1px rgba(255,255,255,0.08) inset;
+      transition:
+        transform 180ms cubic-bezier(.2,.9,.2,1),
+        box-shadow 180ms ease,
+        background 180ms ease,
+        border-color 180ms ease,
+        color 180ms ease;
+    }
+
+    .btn::before, .btn2::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      border-radius: inherit;
+      background:
+        radial-gradient(140% 120% at 18% 0%, rgba(255,255,255,0.22), rgba(255,255,255,0) 55%),
+        radial-gradient(120% 100% at 90% 120%, rgba(255,255,255,0.12), rgba(255,255,255,0) 55%),
+        radial-gradient(120% 90% at 84% 10%, rgba(252,109,38,0.16), rgba(252,109,38,0) 60%);
+      opacity: 0.0;
+      transition: opacity 180ms ease;
+      pointer-events: none;
+    }
+
+    .btn:hover, .btn2:hover {
+      transform: translateY(-1px);
+      box-shadow:
+        0 26px 72px rgba(0,0,0,0.50),
+        0 0 0 1px rgba(255,255,255,0.10) inset;
+    }
+    .btn:hover::before, .btn2:hover::before { opacity: 1; }
+    .btn:active, .btn2:active { transform: translateY(0px) scale(0.99); }
+
+    .btn:focus-visible, .btn2:focus-visible {
+      outline: none;
+      box-shadow:
+        0 26px 72px rgba(0,0,0,0.50),
+        0 0 0 1px rgba(255,255,255,0.12) inset,
+        0 0 0 4px rgba(252,109,38,0.18);
+    }
+
+    .btn:disabled, .btn2:disabled {
+      opacity: 0.55;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    /* Primary (mercury + orange tinge) */
+    .btn {
+      color: #fff;
+      background:
+        radial-gradient(130% 150% at 18% 0%, rgba(255,255,255,0.20), rgba(255,255,255,0.04) 55%, rgba(255,255,255,0.03) 100%),
+        radial-gradient(120% 100% at 90% 120%, rgba(252,109,38,0.18), rgba(252,109,38,0) 60%),
+        linear-gradient(180deg, rgba(255,255,255,0.08), rgba(255,255,255,0.03));
+      border: 1px solid rgba(252,109,38,0.34);
+      box-shadow:
+        0 18px 46px rgba(0,0,0,0.40),
+        0 0 0 1px rgba(255,255,255,0.08) inset,
+        0 18px 46px rgba(252,109,38,0.14);
+    }
+
+    /* Secondary (mercury glass neutral) */
+    .btn2 {
+      background: rgba(255,255,255,0.06);
+      border: 1px solid rgba(255,255,255,0.14);
+      color: #e2e8f0;
+    }
+    .btn2:hover {
+      border-color: rgba(252,109,38,0.22);
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .btn, .btn2 { transition: none !important; }
+      .btn:hover, .btn2:hover { transform: none !important; }
+      .btn:active, .btn2:active { transform: none !important; }
+    }
+    .chip {
+      background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(255,255,255,0.10);
+      border-radius: 9999px;
+      padding: 6px 10px;
+      font-size: 10px;
+      font-weight: 900;
+      letter-spacing: .18em;
+      text-transform: uppercase;
+      color: #cbd5e1;
+      white-space: nowrap;
+    }
+
+    .balCard {
+      cursor: pointer;
+      text-align: left;
+      transition:
+        transform 180ms cubic-bezier(.2,.9,.2,1),
+        border-color 180ms ease,
+        background 180ms ease,
+        box-shadow 180ms ease;
+    }
+    .balCard:hover {
+      transform: translateY(-2px);
+      border-color: rgba(255,255,255,0.16);
+      box-shadow:
+        0 18px 56px rgba(0,0,0,0.40),
+        0 0 0 1px rgba(255,255,255,0.08) inset,
+        0 0 36px rgba(252,109,38,0.10);
+    }
+    .balCard:active { transform: translateY(0px) scale(0.995); }
+    .balCard:focus-visible {
+      outline: none;
+      box-shadow:
+        0 18px 56px rgba(0,0,0,0.40),
+        0 0 0 1px rgba(255,255,255,0.10) inset,
+        0 0 0 4px rgba(252,109,38,0.18);
+    }
+
+    .chartWrap {
+      position: relative;
+      height: 220px;
+      width: 100%;
+      border-radius: 18px;
+      overflow: hidden;
+      background:
+        radial-gradient(120% 120% at 20% 0%, rgba(255,255,255,0.10), rgba(255,255,255,0.02) 60%),
+        linear-gradient(180deg, rgba(0,0,0,0.22), rgba(0,0,0,0.42));
+      border: 1px solid rgba(255,255,255,0.10);
+    }
+    .chartSvg { width: 100%; height: 100%; display: block; }
+    .chartGrid {
+      stroke: rgba(255,255,255,0.08);
+      stroke-width: 1;
+      shape-rendering: crispEdges;
+    }
+    .chartPath {
+      fill: none;
+      stroke: rgba(252,109,38,0.92);
+      stroke-width: 2.2;
+      filter: drop-shadow(0 10px 24px rgba(252,109,38,0.20));
+    }
+    .chartArea {
+      fill: url(#areaFill);
+      opacity: 0.92;
+    }
+    .chartBall {
+      filter: drop-shadow(0 10px 22px rgba(252,109,38,0.28));
+      animation: chartPulse 1.6s ease-in-out infinite;
+      transform-origin: center;
+    }
+    @keyframes chartPulse {
+      0%, 100% { transform: scale(1); opacity: 0.95; }
+      50% { transform: scale(1.08); opacity: 1; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .balCard { transition: none !important; }
+      .balCard:hover { transform: none !important; }
+      .balCard:active { transform: none !important; }
+      .chartBall { animation: none !important; }
+    }
+
+    /* Custom Select (melt-open dropdown) */
+    .tokenIcon {
+      --ti-size: 22px;
+      width: var(--ti-size);
+      height: var(--ti-size);
+      border-radius: 9999px;
+      display: grid;
+      place-items: center;
+      flex: 0 0 auto;
+      position: relative;
+      overflow: hidden;
+      border: 1px solid rgba(255,255,255,0.16);
+      background:
+        radial-gradient(120% 140% at 20% 0%, rgba(255,255,255,0.22), rgba(255,255,255,0.05) 52%, rgba(255,255,255,0.02) 100%),
+        radial-gradient(120% 100% at 90% 120%, rgba(252,109,38,0.12), rgba(252,109,38,0) 60%),
+        linear-gradient(180deg, rgba(18,18,26,0.92), rgba(8,8,12,0.82));
+      box-shadow:
+        0 10px 30px rgba(0,0,0,0.35),
+        0 0 0 1px rgba(255,255,255,0.08) inset,
+        0 0 22px rgba(252,109,38,0.10);
+      backdrop-filter: blur(12px) saturate(1.2);
+      -webkit-backdrop-filter: blur(12px) saturate(1.2);
+    }
+    .tokenIcon::before {
+      content: '';
+      position: absolute;
+      inset: -1px;
+      border-radius: inherit;
+      background:
+        radial-gradient(85% 45% at 18% 10%, rgba(255,255,255,0.30), rgba(255,255,255,0) 70%),
+        linear-gradient(90deg, rgba(255,255,255,0.00), rgba(255,255,255,0.12), rgba(255,255,255,0.00));
+      opacity: 0.85;
+      pointer-events: none;
+      mix-blend-mode: screen;
+    }
+    .tokenIcon::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      border-radius: inherit;
+      background: radial-gradient(110% 120% at 70% 120%, rgba(252,109,38,0.14), rgba(252,109,38,0) 62%);
+      opacity: 0.8;
+      pointer-events: none;
+    }
+    .tokenIconSm { --ti-size: 18px; }
+    .tokenIconBtn { --ti-size: 20px; }
+    .tokenGlyph {
+      position: relative;
+      z-index: 1;
+      font-weight: 950;
+      letter-spacing: 0.02em;
+      font-size: calc(var(--ti-size) * 0.56);
+      line-height: 1;
+      color: rgba(248,250,252,0.96);
+      text-shadow: 0 2px 10px rgba(0,0,0,0.35);
+    }
+
+    /* Per-token accents (subtle) */
+    .tokenIcon[data-token="USDT"] {
+      box-shadow:
+        0 10px 30px rgba(0,0,0,0.35),
+        0 0 0 1px rgba(255,255,255,0.08) inset,
+        0 0 24px rgba(16,185,129,0.16);
+      background:
+        radial-gradient(120% 140% at 20% 0%, rgba(255,255,255,0.22), rgba(255,255,255,0.05) 52%, rgba(255,255,255,0.02) 100%),
+        radial-gradient(120% 100% at 90% 120%, rgba(16,185,129,0.18), rgba(16,185,129,0) 60%),
+        linear-gradient(180deg, rgba(18,18,26,0.92), rgba(8,8,12,0.82));
+    }
+    .tokenIcon[data-token="ETH"] {
+      box-shadow:
+        0 10px 30px rgba(0,0,0,0.35),
+        0 0 0 1px rgba(255,255,255,0.08) inset,
+        0 0 24px rgba(99,102,241,0.16);
+      background:
+        radial-gradient(120% 140% at 20% 0%, rgba(255,255,255,0.22), rgba(255,255,255,0.05) 52%, rgba(255,255,255,0.02) 100%),
+        radial-gradient(120% 100% at 90% 120%, rgba(99,102,241,0.18), rgba(99,102,241,0) 60%),
+        linear-gradient(180deg, rgba(18,18,26,0.92), rgba(8,8,12,0.82));
+    }
+    .tokenIcon[data-token="BCH"] {
+      box-shadow:
+        0 10px 30px rgba(0,0,0,0.35),
+        0 0 0 1px rgba(255,255,255,0.08) inset,
+        0 0 24px rgba(245,158,11,0.16);
+      background:
+        radial-gradient(120% 140% at 20% 0%, rgba(255,255,255,0.22), rgba(255,255,255,0.05) 52%, rgba(255,255,255,0.02) 100%),
+        radial-gradient(120% 100% at 90% 120%, rgba(245,158,11,0.18), rgba(245,158,11,0) 60%),
+        linear-gradient(180deg, rgba(18,18,26,0.92), rgba(8,8,12,0.82));
+    }
+
+    .selectWrap {
+      position: relative;
+    }
+    .selectNative {
+      position: absolute !important;
+      opacity: 0 !important;
+      pointer-events: none !important;
+      width: 1px !important;
+      height: 1px !important;
+      overflow: hidden !important;
+      left: 0;
+      top: 0;
+    }
+    .selectBtn {
+      appearance: none;
+      -webkit-appearance: none;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      text-align: left;
+      padding-right: 44px;
+    }
+    .selectBtnMain {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      min-width: 0;
+    }
+    .selectBtnText {
+      min-width: 0;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .selectChevron {
+      position: absolute;
+      right: 14px;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 16px;
+      height: 16px;
+      opacity: 0.9;
+      pointer-events: none;
+      transition: transform 220ms cubic-bezier(.2,.9,.2,1), opacity 220ms ease;
+    }
+    .selectWrap.open .selectChevron {
+      transform: translateY(-50%) rotate(180deg);
+      opacity: 1;
+    }
+    .selectMenu {
+      position: absolute;
+      left: 0;
+      right: 0;
+      top: calc(100% + 10px);
+      z-index: 650;
+      position: absolute;
+      overflow: hidden;
+      background:
+        radial-gradient(120% 160% at 14% 0%, rgba(255,255,255,0.22), rgba(255,255,255,0.05) 52%, rgba(255,255,255,0.02) 100%),
+        radial-gradient(140% 120% at 90% 20%, rgba(255,255,255,0.14), rgba(255,255,255,0.02) 62%),
+        linear-gradient(180deg, rgba(16,16,22,0.92), rgba(10,10,15,0.88));
+      border: 1px solid rgba(255,255,255,0.22);
+      border-radius: 18px;
+      box-shadow:
+        0 34px 110px rgba(0,0,0,0.65),
+        0 0 0 1px rgba(255,255,255,0.10) inset,
+        0 0 64px rgba(252,109,38,0.14);
+      backdrop-filter: blur(18px) saturate(1.25);
+      -webkit-backdrop-filter: blur(18px) saturate(1.25);
+      max-height: 280px;
+      overflow: auto;
+      padding: 6px;
+
+      opacity: 0;
+      visibility: hidden;
+      pointer-events: none;
+      transform: translateY(-6px) scale(0.985);
+      filter: blur(8px);
+      transition:
+        opacity 180ms ease,
+        transform 240ms cubic-bezier(.2,.9,.2,1),
+        filter 240ms ease,
+        visibility 0s linear 180ms;
+    }
+
+    .selectMenu::before {
+      content: '';
+      position: absolute;
+      inset: -2px;
+      border-radius: inherit;
+      background:
+        radial-gradient(85% 45% at 18% 8%, rgba(255,255,255,0.34), rgba(255,255,255,0) 70%),
+        linear-gradient(90deg, rgba(255,255,255,0.00), rgba(255,255,255,0.10), rgba(255,255,255,0.00));
+      opacity: 0.85;
+      pointer-events: none;
+      mix-blend-mode: screen;
+    }
+    .selectMenu::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      border-radius: inherit;
+      background: radial-gradient(110% 120% at 70% 120%, rgba(252,109,38,0.16), rgba(252,109,38,0) 62%);
+      opacity: 0.8;
+      pointer-events: none;
+    }
+    .selectWrap.open .selectMenu {
+      opacity: 1;
+      visibility: visible;
+      pointer-events: auto;
+      transform: translateY(0px) scale(1);
+      filter: blur(0px);
+      transition:
+        opacity 180ms ease,
+        transform 240ms cubic-bezier(.2,.9,.2,1),
+        filter 240ms ease;
+    }
+    .selectMenu::-webkit-scrollbar { width: 0px; }
+
+    .selectItem {
+      width: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 12px 12px;
+      border-radius: 14px;
+      background:
+        radial-gradient(140% 120% at 16% 0%, rgba(255,255,255,0.12), rgba(255,255,255,0.03) 56%, rgba(255,255,255,0.02) 100%),
+        linear-gradient(180deg, rgba(8,8,12,0.38), rgba(6,6,10,0.28));
+      border: 1px solid rgba(255,255,255,0.10);
+      transition: background 160ms ease, border-color 160ms ease, transform 160ms cubic-bezier(.2,.9,.2,1);
+    }
+    .selectItem:hover {
+      background:
+        radial-gradient(140% 120% at 16% 0%, rgba(255,255,255,0.18), rgba(255,255,255,0.05) 56%, rgba(255,255,255,0.02) 100%),
+        radial-gradient(120% 100% at 90% 120%, rgba(252,109,38,0.14), rgba(252,109,38,0) 60%),
+        linear-gradient(180deg, rgba(10,10,14,0.48), rgba(8,8,12,0.34));
+      border-color: rgba(255,255,255,0.16);
+      transform: translateY(-1px);
+    }
+    .selectItem:active { transform: translateY(0px) scale(0.995); }
+
+    .selectItemLeft {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      flex: 1;
+      min-width: 0;
+      text-align: left;
+    }
+    .selectItemLeftRow {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex: 1;
+      min-width: 0;
+    }
+
+    .selectItemTitle {
+      font-size: 11px;
+      font-weight: 900;
+      letter-spacing: .16em;
+      text-transform: uppercase;
+      color: #f8fafc;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .selectItemSub {
+      margin-top: 3px;
+      font-size: 11px;
+      color: rgba(226,232,240,0.72);
+    }
+    .selectItemRight {
+      display: grid;
+      place-items: center;
+      width: 28px;
+      height: 28px;
+      border-radius: 9999px;
+      border: 1px solid rgba(255,255,255,0.10);
+      background: rgba(255,255,255,0.04);
+      opacity: 0;
+      transform: scale(0.92);
+      transition: opacity 160ms ease, transform 160ms cubic-bezier(.2,.9,.2,1);
+    }
+    .selectItem.selected {
+      background:
+        radial-gradient(140% 120% at 16% 0%, rgba(255,255,255,0.16), rgba(255,255,255,0.04) 56%, rgba(255,255,255,0.02) 100%),
+        radial-gradient(120% 100% at 90% 120%, rgba(252,109,38,0.18), rgba(252,109,38,0) 60%),
+        linear-gradient(180deg, rgba(16,16,22,0.62), rgba(10,10,15,0.44));
+      border-color: rgba(252,109,38,0.26);
+    }
+    .selectItem.selected .selectItemRight {
+      opacity: 1;
+      transform: scale(1);
+      border-color: rgba(252,109,38,0.26);
+      background: rgba(252,109,38,0.10);
+    }
+    .selectItemRight svg {
+      width: 16px;
+      height: 16px;
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .selectChevron, .selectMenu, .selectItem { transition: none !important; }
+      .selectMenu { filter: none !important; }
+      .selectItem:hover { transform: none !important; }
+      .selectItem:active { transform: none !important; }
+    }
+    .modal {
+      position: fixed;
+      inset: 0;
+      z-index: 300;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: rgba(5,5,8,0.88);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      opacity: 0;
+      visibility: hidden;
+      pointer-events: none;
+      transition: opacity 180ms ease, visibility 0s linear 180ms;
+    }
+    .modal > div {
+      transform: translateY(12px) scale(0.985);
+      opacity: 0.92;
+      transition: transform 220ms cubic-bezier(.2,.9,.2,1), opacity 220ms ease;
+      will-change: transform, opacity;
+    }
+    .modal.active {
+      opacity: 1;
+      visibility: visible;
+      pointer-events: auto;
+      transition: opacity 180ms ease;
+    }
+    .modal.active > div {
+      transform: translateY(0px) scale(1);
+      opacity: 1;
+    }
+
+    .fadeIn {
+      animation: fadeInUp 260ms cubic-bezier(.2,.9,.2,1) both;
+    }
+    @keyframes fadeInUp {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0px); }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .modal, .modal > div { transition: none !important; }
+      .fadeIn { animation: none !important; }
+    }
+
+    /* Header melt-away on scroll */
+    .appHeader {
+      --melt: 0;
+      position: sticky;
+      top: 0;
+      z-index: 120;
+      background: linear-gradient(180deg, rgba(10,10,15,0.82) 0%, rgba(10,10,15,0.62) 70%, rgba(10,10,15,0) 100%);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border-bottom: 1px solid rgba(255,255,255,0.08);
+      will-change: transform, opacity, filter, margin-bottom;
+      transform-origin: top center;
+      /* Pull content up as header disappears to avoid leaving a blank bar */
+      margin-bottom: calc(var(--melt) * -92px);
+      transform:
+        translateY(calc(var(--melt) * -72px))
+        scale(calc(1 - (var(--melt) * 0.03)));
+      opacity: calc(1 - var(--melt));
+      filter: blur(calc(var(--melt) * 4px));
+      transition:
+        transform 220ms cubic-bezier(.2,.9,.2,1),
+        opacity 180ms ease,
+        filter 220ms ease,
+        margin-bottom 220ms cubic-bezier(.2,.9,.2,1);
+    }
+
+    .appHeader.meltHidden {
+      pointer-events: none;
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .appHeader {
+        transition: none !important;
+        filter: none !important;
+      }
+    }
+    .scroll::-webkit-scrollbar { width: 0px; }
+  </style>
+</head>
+<body>
+  <div class="bg"></div>
+
+  <!-- Toast -->
+  <div id="toast" class="fixed top-6 left-1/2 -translate-x-1/2 z-[600] opacity-0 pointer-events-none transition-all duration-300">
+    <div class="glass popupGlass rounded-2xl px-4 py-3 text-[11px] font-black border border-white/10">
+      <span id="toastText"></span>
+    </div>
+  </div>
+
+  <!-- AUTH -->
+  <section id="auth" class="relative z-10 h-full w-full flex items-center justify-center p-4">
+    <div class="glass w-full max-w-lg rounded-[2rem] p-6 sm:p-7">
+      <p class="text-[10px] font-black uppercase tracking-[0.35em] text-slate-500">Fresh Environment</p>
+      <h1 class="mt-2 text-2xl sm:text-3xl font-black tracking-tight">PIM AR Wallet</h1>
+      <p class="mt-2 text-sm text-slate-400">Login to access wallet tools, converter, send/receive, and the on-chain artifact minting scanner.</p>
+
+      <div class="mt-5 grid gap-3">
+        <div>
+          <label class="text-[9px] font-black uppercase tracking-widest text-slate-500 ml-2">GitLab Base URL</label>
+          <input id="glBase" class="mt-1 w-full bg-black/40 border border-white/10 rounded-2xl p-3 text-[12px] text-white outline-none focus:border-orange-500/50" placeholder="https://gitlab.com" value="https://gitlab.com" />
+        </div>
+        <div>
+          <label class="text-[9px] font-black uppercase tracking-widest text-slate-500 ml-2">Application ID (client_id)</label>
+          <input id="glClient" class="mt-1 w-full bg-black/40 border border-white/10 rounded-2xl p-3 text-[12px] text-white outline-none focus:border-orange-500/50" placeholder="Paste your GitLab app ID" />
+        </div>
+        <div>
+          <label class="text-[9px] font-black uppercase tracking-widest text-slate-500 ml-2">Client Secret (optional)</label>
+          <input id="glSecret" class="mt-1 w-full bg-black/40 border border-white/10 rounded-2xl p-3 text-[12px] text-white outline-none focus:border-orange-500/50" placeholder="Only if your app is confidential" />
+        </div>
+      </div>
+
+      <div class="mt-5 flex flex-wrap gap-2">
+        <span class="chip">PKCE</span>
+        <span class="chip">Local-first</span>
+        <span class="chip">No backend</span>
+        <span class="chip">PIM = 0.10 USDT</span>
+      </div>
+
+      <div class="mt-6 flex gap-3">
+        <button id="loginBtn" class="btn h-12 px-5 flex-1" onclick="window.startLogin()">Login with GitLab</button>
+        <button class="btn2 h-12 px-4" onclick="window.enterGuest()">Guest</button>
+      </div>
+
+      <p class="mt-4 text-[11px] text-slate-500">Redirect URI must match this page URL: <span id="redirectUriText" class="font-mono"></span></p>
+    </div>
+  </section>
+
+  <!-- APP -->
+  <section id="app" class="relative z-10 h-full w-full hidden">
+    <header id="appHeader" class="appHeader px-4 sm:px-6 pt-8 sm:pt-10 pb-4 flex items-center justify-between">
+      <div class="flex items-center gap-3 min-w-0">
+        <div class="tokenIcon" style="--ti-size: 42px" id="userAvatarWrap" aria-label="User profile">
+          <img id="userAvatarImg" alt="" class="absolute inset-0 w-full h-full object-cover rounded-full" style="display:none" />
+          <span id="userAvatarFallback" class="tokenGlyph" style="font-size: 18px">G</span>
+        </div>
+        <div class="min-w-0">
+          <p id="userName" class="text-sm font-black text-white truncate"></p>
+          <p id="userHandle" class="mt-1 text-[10px] font-black uppercase tracking-[0.35em] text-slate-500 truncate"></p>
+        </div>
+      </div>
+      <div class="flex gap-2">
+        <button class="btn2 h-11 px-4" onclick="window.openModal('receiveModal')">Receive</button>
+        <button class="btn2 h-11 px-4" onclick="window.openModal('sendModal')">Send</button>
+        <button class="btn2 h-11 px-4" onclick="window.openModal('settingsModal')">
+          <span class="inline-flex items-center gap-2">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="none" class="w-4 h-4">
+              <path d="M8 1.75l.62 1.45c.1.24.34.4.6.42l1.58.12-.95 1.28c-.16.21-.2.5-.1.75l.6 1.48-1.5-.38a.78.78 0 0 0-.78.23L7 9.22 6.33 7.72a.78.78 0 0 0-.78-.23l-1.5.38.6-1.48c.1-.25.06-.54-.1-.75L3.6 4.34l1.58-.12c.26-.02.5-.18.6-.42L6.4 1.75" stroke="rgba(226,232,240,0.92)" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
+              <path d="M8 14.25a3.25 3.25 0 1 0 0-6.5 3.25 3.25 0 0 0 0 6.5Z" stroke="rgba(252,109,38,0.85)" stroke-width="1.2"/>
+            </svg>
+            Settings
+          </span>
+        </button>
+        <button class="btn2 h-11 px-4" onclick="window.logout()">Logout</button>
+      </div>
+    </header>
+
+    <main id="appMain" class="h-[calc(100vh-92px)] px-4 sm:px-6 pb-8 overflow-y-auto scroll">
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
+
+        <!-- Balances -->
+        <section class="glass rounded-[2rem] p-5 sm:p-6 lg:col-span-2">
+          <div class="flex items-start justify-between gap-4">
+            <div>
+              <p class="text-[10px] font-black uppercase tracking-[0.3em] text-slate-500">Wallet</p>
+              <h2 class="mt-1 text-xl font-black">Balances</h2>
+              <p class="mt-1 text-[11px] text-slate-400">Tap a token to view its price history.</p>
+            </div>
+          </div>
+
+          <div class="mt-4 grid grid-cols-2 sm:grid-cols-4 gap-3">
+            <button type="button" class="balCard p-4 rounded-2xl bg-white/5 border border-white/10" onclick="window.openPrice?.('PIM')">
+              <div class="flex items-center gap-2">
+                <span class="tokenIcon tokenIconSm" data-token="PIM"><span class="tokenGlyph">P</span></span>
+                <p class="text-[9px] font-black uppercase tracking-widest text-slate-500">PIM</p>
+              </div>
+              <p id="balPim" class="mt-1 text-lg font-black tabular-nums">0.00</p>
+              <p class="mt-1 text-[10px] text-orange-200">Fixed (demo): 1 PIM = 0.10 USDT</p>
+            </button>
+            <button type="button" class="balCard p-4 rounded-2xl bg-white/5 border border-white/10" onclick="window.openPrice?.('ETH')">
+              <div class="flex items-center gap-2">
+                <span class="tokenIcon tokenIconSm" data-token="ETH"><span class="tokenGlyph">Ξ</span></span>
+                <p class="text-[9px] font-black uppercase tracking-widest text-slate-500">ETH</p>
+              </div>
+              <p id="balEth" class="mt-1 text-lg font-black tabular-nums">0.00</p>
+            </button>
+            <button type="button" class="balCard p-4 rounded-2xl bg-white/5 border border-white/10" onclick="window.openPrice?.('BCH')">
+              <div class="flex items-center gap-2">
+                <span class="tokenIcon tokenIconSm" data-token="BCH"><span class="tokenGlyph">Ƀ</span></span>
+                <p class="text-[9px] font-black uppercase tracking-widest text-slate-500">BCH</p>
+              </div>
+              <p id="balBch" class="mt-1 text-lg font-black tabular-nums">0.00</p>
+            </button>
+            <button type="button" class="balCard p-4 rounded-2xl bg-white/5 border border-white/10" onclick="window.openPrice?.('USDT')">
+              <div class="flex items-center gap-2">
+                <span class="tokenIcon tokenIconSm" data-token="USDT"><span class="tokenGlyph">₮</span></span>
+                <p class="text-[9px] font-black uppercase tracking-widest text-slate-500">USDT</p>
+              </div>
+              <p id="balUsdt" class="mt-1 text-lg font-black tabular-nums">0.00</p>
+            </button>
+          </div>
+        </section>
+
+        <!-- Send (Converter) -->
+        <section id="sendSection" class="glass rounded-[2rem] p-5 sm:p-6 hidden">
+          <p class="text-[10px] font-black uppercase tracking-[0.3em] text-slate-500">Send</p>
+          <h3 class="mt-1 text-lg font-black">Send + Converter</h3>
+          <p class="mt-1 text-[11px] text-slate-400">Send uses the demo ledger. Converter shows a live-ish estimate (USDT-base) when available.</p>
+
+          <div class="mt-4 grid gap-3">
+            <div>
+              <label class="text-[9px] font-black uppercase tracking-widest text-slate-500 ml-2">From</label>
+              <select id="convFrom" class="selectUI mt-1 w-full bg-black/40 border border-white/10 rounded-2xl p-3 text-[12px] text-white outline-none focus:border-orange-500/50" onchange="window.updateConverter(); window.updateSendConverter?.()">
+                <option value="PIM">PIM</option>
+                <option value="ETH">ETH</option>
+                <option value="BCH">BCH (Bitcoin Cash)</option>
+                <option value="USDT">USDT</option>
+              </select>
+              <div class="mt-2 flex items-center justify-between">
+                <p id="convAvail" class="text-[11px] text-slate-400">Available: —</p>
+                <button class="btn2 h-9 px-3" onclick="window.convMax?.()">Max</button>
+              </div>
+            </div>
+            <div>
+              <label class="text-[9px] font-black uppercase tracking-widest text-slate-500 ml-2">Amount</label>
+              <input id="convAmount" class="mt-1 w-full bg-black/40 border border-white/10 rounded-2xl p-3 text-[12px] text-white outline-none focus:border-orange-500/50" value="1" oninput="window.updateConverter()" />
+            </div>
+            <div>
+              <label class="text-[9px] font-black uppercase tracking-widest text-slate-500 ml-2">To (destination)</label>
+              <input id="convToAddr" class="mt-1 w-full bg-black/40 border border-white/10 rounded-2xl p-3 text-[12px] text-white outline-none focus:border-orange-500/50" placeholder="Address (e.g. PIM-… or 0x…)" />
+              <p class="mt-2 text-[11px] text-slate-500">Accepted: PIM / ETH / USDT / BCH destinations (demo) and valid EVM <span class="font-mono">0x…</span> addresses.</p>
+            </div>
+
+            <div>
+              <label class="text-[9px] font-black uppercase tracking-widest text-slate-500 ml-2">Show value in</label>
+              <select id="convTo" class="selectUI mt-1 w-full bg-black/40 border border-white/10 rounded-2xl p-3 text-[12px] text-white outline-none focus:border-orange-500/50" onchange="window.updateConverter()">
+                <option value="USDT">USDT</option>
+                <option value="PIM">PIM</option>
+                <option value="ETH">ETH</option>
+                <option value="BCH">BCH (Bitcoin Cash)</option>
+              </select>
+            </div>
+
+            <div class="p-4 rounded-2xl bg-white/5 border border-white/10">
+              <p class="text-[9px] font-black uppercase tracking-widest text-slate-500">Result</p>
+              <p id="convResult" class="mt-1 text-lg font-black tabular-nums">—</p>
+              <p id="rateLine" class="mt-1 text-[11px] text-slate-400"></p>
+            </div>
+
+            <button class="btn h-12 px-5 w-full" onclick="window.sendFromConverter?.()">Send</button>
+          </div>
+        </section>
+
+        <!-- Payment gateways -->
+        <section class="glass rounded-[2rem] p-5 sm:p-6 lg:col-span-2">
+          <div class="flex items-start justify-between gap-4">
+            <div>
+              <p class="text-[10px] font-black uppercase tracking-[0.3em] text-slate-500">Payments</p>
+              <h3 class="mt-1 text-lg font-black">Payment Gateways (Simulated)</h3>
+              <p class="mt-1 text-[11px] text-slate-400">No backend in this demo, so payments are UX simulation only.</p>
+            </div>
+            <span class="chip">Sandbox</span>
+          </div>
+
+          <div class="mt-4 grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <button class="btn2 h-12 px-4" onclick="window.simulateGateway('Card Checkout')">Card Checkout</button>
+            <button class="btn2 h-12 px-4" onclick="window.simulateGateway('Crypto Onramp')">Crypto Onramp</button>
+            <button class="btn2 h-12 px-4" onclick="window.simulateGateway('Instant EFT')">Instant EFT</button>
+          </div>
+
+          <div class="mt-4 p-4 rounded-2xl bg-white/5 border border-white/10">
+            <div class="flex items-center justify-between gap-3">
+              <div>
+                <p class="text-[9px] font-black uppercase tracking-widest text-slate-500">EVM Wallet</p>
+                <p id="evmStatus" class="mt-1 text-[11px] text-slate-300">Not connected</p>
+              </div>
+              <button id="evmConnectBtn" class="btn h-11 px-5" onclick="window.connectEvmWallet?.()">Connect</button>
+            </div>
+
+            <div class="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div class="p-3 rounded-2xl bg-black/30 border border-white/10">
+                <p class="text-[9px] font-black uppercase tracking-widest text-slate-500">Address</p>
+                <p id="evmAddr" class="mt-1 font-mono text-[11px] text-orange-200 break-all">—</p>
+              </div>
+              <div class="p-3 rounded-2xl bg-black/30 border border-white/10">
+                <p class="text-[9px] font-black uppercase tracking-widest text-slate-500">Chain</p>
+                <p id="evmChain" class="mt-1 text-[11px] text-slate-200">—</p>
+              </div>
+              <div class="p-3 rounded-2xl bg-black/30 border border-white/10">
+                <p class="text-[9px] font-black uppercase tracking-widest text-slate-500">Native</p>
+                <p id="evmNative" class="mt-1 text-[11px] text-slate-200">—</p>
+              </div>
+              <div class="p-3 rounded-2xl bg-black/30 border border-white/10">
+                <p class="text-[9px] font-black uppercase tracking-widest text-slate-500">PIM (ERC-20)</p>
+                <p id="evmPim" class="mt-1 text-[11px] text-slate-200">—</p>
+              </div>
+            </div>
+
+            <p class="mt-2 text-[11px] text-slate-400">Uses Web3.js with an injected provider (MetaMask / Wallet extension). Set the PIM contract address per chain in <span class="font-mono">pim-ar-wallet/src/config/pimToken.js</span>.</p>
+          </div>
+        </section>
+
+        <!-- Scanner + On-chain artifacts -->
+        <section class="glass rounded-[2rem] p-5 sm:p-6">
+          <p class="text-[10px] font-black uppercase tracking-[0.3em] text-slate-500">On-Chain</p>
+          <h3 class="mt-1 text-lg font-black">Dir (Directory) Artifact Scanner</h3>
+          <p class="mt-1 text-[11px] text-slate-400">Safe scan: detects “lost directories” (no readable files) and counts unique unknown/unreadable file <span class="font-semibold">types</span> (extensions). No file contents are read.</p>
+
+          <div class="mt-4 flex flex-wrap gap-2">
+            <button class="btn h-11 px-5" onclick="window.pickAndScan()">Pick Folder & Scan</button>
+            <label class="btn2 h-11 px-4 grid place-items-center cursor-pointer">
+              <input id="fallbackDir" type="file" webkitdirectory directory multiple class="hidden" onchange="window.scanFallbackFiles(this.files)" />
+              Fallback Pick
+            </label>
+          </div>
+
+          <div class="mt-3 p-4 rounded-2xl bg-white/5 border border-white/10">
+            <div class="flex items-center justify-between gap-3">
+              <div>
+                <p class="text-[9px] font-black uppercase tracking-widest text-slate-500">Text Pattern Scan</p>
+                <p class="text-[11px] text-slate-300">Reads only <span class="font-semibold">.txt</span> content (first 8KB) to detect encrypted node markers.</p>
+              </div>
+              <label class="btn2 h-11 px-4 grid place-items-center cursor-pointer">
+                <input id="deepScanToggle" type="checkbox" class="hidden" onchange="window.setDeepScanText(this.checked)" />
+                Deep Scan
+              </label>
+            </div>
+            <p class="mt-2 text-[11px] text-slate-400">When patterns are detected, PIM starts earning <span class="font-semibold">0.50%</span> interest over time (compounding daily in this demo).</p>
+          </div>
+
+          <div class="mt-4 grid grid-cols-2 gap-3">
+            <div class="p-4 rounded-2xl bg-white/5 border border-white/10">
+              <p class="text-[9px] font-black uppercase tracking-widest text-slate-500">Lost directories</p>
+              <p id="scanLost" class="mt-1 text-lg font-black tabular-nums">0</p>
+            </div>
+            <div class="p-4 rounded-2xl bg-white/5 border border-white/10">
+              <p class="text-[9px] font-black uppercase tracking-widest text-slate-500">Unreadable types</p>
+              <p id="scanUnreadable" class="mt-1 text-lg font-black tabular-nums">0</p>
+            </div>
+          </div>
+
+          <div class="mt-3 grid grid-cols-2 gap-3">
+            <div class="p-4 rounded-2xl bg-white/5 border border-white/10">
+              <p class="text-[9px] font-black uppercase tracking-widest text-slate-500">Node pattern hits</p>
+              <p id="scanNodeHits" class="mt-1 text-lg font-black tabular-nums">0</p>
+            </div>
+            <div class="p-4 rounded-2xl bg-white/5 border border-white/10">
+              <p class="text-[9px] font-black uppercase tracking-widest text-slate-500">Mint cap</p>
+              <p id="mintCapLine" class="mt-1 text-[12px] font-black tabular-nums">0 / 10,000,000</p>
+              <p class="mt-1 text-[11px] text-slate-400">Dir-minted PIM only</p>
+            </div>
+          </div>
+
+          <div class="mt-3 p-4 rounded-2xl bg-white/5 border border-white/10">
+            <div class="flex items-center justify-between gap-3">
+              <div>
+                <p class="text-[9px] font-black uppercase tracking-widest text-slate-500">Unreadable Type Pool</p>
+                <p class="text-[11px] text-slate-300"><span id="unreadablePoolCount">0</span> unreadable types queued for mint</p>
+              </div>
+              <button class="btn h-11 px-5" onclick="window.mintUnreadableTypeToCoin()">Mint 1 PIM</button>
+            </div>
+            <p class="mt-2 text-[11px] text-slate-400">Rule: 1 unreadable type → 1 tangible coin (simulated): 1 PIM. If node patterns are found in text files, interest activates at <span class="font-semibold">0.50%</span> over time. Each mint consumes 1 type.</p>
+          </div>
+
+          <div class="mt-3 p-4 rounded-2xl bg-gradient-to-br from-[#20161a] to-[#0f0a0c] border border-orange-500/20">
+            <div class="flex items-center justify-between">
+              <div>
+                <p class="text-[9px] font-black uppercase tracking-widest text-orange-300">On-Chain Coin</p>
+                <p class="text-[11px] text-slate-300">Minting stops automatically once <span class="font-semibold">10,000,000</span> dir-minted PIM is reached.</p>
+              </div>
+              <button class="btn2 h-11 px-4" onclick="window.clearUnreadablePool()">Clear Pool</button>
+            </div>
+          </div>
+
+          <div class="mt-3 p-4 rounded-2xl bg-white/5 border border-white/10">
+            <div class="flex items-center justify-between gap-3">
+              <div>
+                <p class="text-[9px] font-black uppercase tracking-widest text-slate-500">Encrypted Text Nodes</p>
+                <p id="nodeDirStatus" class="text-[11px] text-slate-300">No node directory selected</p>
+              </div>
+              <div class="flex gap-2">
+                <button class="btn2 h-11 px-4" onclick="window.selectNodeParent()">Select</button>
+                <button class="btn h-11 px-5" onclick="window.generateEncryptedNode()">Generate</button>
+              </div>
+            </div>
+            <p class="mt-2 text-[11px] text-slate-400">Creates a <span class="font-semibold">PIM_ENCRYPTED_NODES</span> directory and writes encrypted node .txt files (demo). Deep Scan can detect these patterns.</p>
+          </div>
+
+          <div class="mt-4">
+            <p class="text-[9px] font-black uppercase tracking-widest text-slate-500">Artifacts (local)</p>
+            <div id="artifactList" class="mt-2 space-y-2 max-h-44 overflow-y-auto scroll"></div>
+          </div>
+        </section>
+
+        <!-- Activity -->
+        <section class="glass rounded-[2rem] p-5 sm:p-6 lg:col-span-3">
+          <p class="text-[10px] font-black uppercase tracking-[0.3em] text-slate-500">Activity</p>
+          <h3 class="mt-1 text-lg font-black">Transactions (local)</h3>
+          <div id="txList" class="mt-3 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3"></div>
+        </section>
+
+      </div>
+    </main>
+  </section>
+
+  <!-- Send Modal -->
+  <div id="sendModal" class="modal" onclick="window.closeModalOnBackdrop(event)">
+    <div class="glass popupGlass w-full max-w-lg rounded-[2rem] p-6" onclick="event.stopPropagation()">
+      <div class="flex items-start justify-between">
+        <div>
+          <p class="text-[10px] font-black uppercase tracking-[0.35em] text-slate-500">Send</p>
+          <p class="mt-1 text-lg font-black">Send Tokens</p>
+        </div>
+        <button class="btn2 h-10 px-4" onclick="window.closeModal('sendModal')">Close</button>
+      </div>
+      <div class="mt-4 grid gap-3">
+        <div>
+          <label class="text-[9px] font-black uppercase tracking-widest text-slate-500 ml-2">Token</label>
+          <select id="sendToken" class="selectUI mt-1 w-full bg-black/40 border border-white/10 rounded-2xl p-3 text-[12px] text-white outline-none focus:border-orange-500/50" onchange="window.updateSendForm?.()">
+            <option value="PIM">PIM</option>
+            <option value="ETH">ETH</option>
+            <option value="BCH">BCH (Bitcoin Cash)</option>
+            <option value="USDT">USDT</option>
+          </select>
+          <div class="mt-2 flex items-center justify-between">
+            <p id="sendAvail" class="text-[11px] text-slate-400">Available: —</p>
+            <button class="btn2 h-9 px-3" onclick="window.sendMax?.()">Max</button>
+          </div>
+        </div>
+        <div>
+          <label class="text-[9px] font-black uppercase tracking-widest text-slate-500 ml-2">Amount</label>
+          <input id="sendAmount" class="mt-1 w-full bg-black/40 border border-white/10 rounded-2xl p-3 text-[12px] text-white outline-none focus:border-orange-500/50" placeholder="0.00" />
+        </div>
+        <div>
+          <label class="text-[9px] font-black uppercase tracking-widest text-slate-500 ml-2">To Address</label>
+          <input id="sendTo" class="mt-1 w-full bg-black/40 border border-white/10 rounded-2xl p-3 text-[12px] text-white outline-none focus:border-orange-500/50" placeholder="Address (e.g. PIM-… or 0x…)" />
+          <p id="sendHelp" class="mt-2 text-[11px] text-slate-500">Tip: token-style IDs like <span class="font-mono">USDT-…</span> also work in this demo.</p>
+        </div>
+      </div>
+      <button class="btn h-12 px-5 w-full mt-5" onclick="window.sendTx()">Send</button>
+      <p class="mt-3 text-[11px] text-slate-500">This is a demo ledger; no real blockchain send occurs.</p>
+    </div>
+  </div>
+
+  <!-- Receive Modal -->
+  <div id="receiveModal" class="modal" onclick="window.closeModalOnBackdrop(event)">
+    <div class="glass popupGlass w-full max-w-lg rounded-[2rem] p-6" onclick="event.stopPropagation()">
+      <div class="flex items-start justify-between">
+        <div>
+          <p class="text-[10px] font-black uppercase tracking-[0.35em] text-slate-500">Receive</p>
+          <p class="mt-1 text-lg font-black">Receive Address</p>
+        </div>
+        <button class="btn2 h-10 px-4" onclick="window.closeModal('receiveModal')">Close</button>
+      </div>
+
+      <div class="mt-4 p-4 rounded-2xl bg-white/5 border border-white/10">
+        <div class="flex items-center justify-between gap-3">
+          <div>
+            <p class="text-[9px] font-black uppercase tracking-widest text-slate-500">Deposit token</p>
+            <p class="text-[11px] text-slate-300">Select which coin you want to receive.</p>
+          </div>
+          <select id="recvToken" class="selectUI bg-black/40 border border-white/10 rounded-2xl px-3 py-2 text-[12px] text-white outline-none focus:border-orange-500/50" onchange="window.renderReceive?.()">
+            <option value="PIM" selected>PIM</option>
+            <option value="ETH">ETH</option>
+            <option value="USDT">USDT</option>
+            <option value="BCH">BCH (Bitcoin Cash)</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="mt-4 p-4 rounded-2xl bg-white/5 border border-white/10">
+        <p class="text-[9px] font-black uppercase tracking-widest text-slate-500">Your Address</p>
+        <p id="recvAddr" class="mt-2 font-mono text-[12px] text-orange-200 break-all"></p>
+      </div>
+      <div class="mt-4 p-4 rounded-2xl bg-white/5 border border-white/10">
+        <div id="qr" class="mx-auto w-fit"></div>
+      </div>
+      <button class="btn2 h-11 px-4 w-full mt-4" onclick="window.copyAddr()">Copy Address</button>
+    </div>
+  </div>
+
+  <!-- Settings Modal (blank for now) -->
+  <div id="settingsModal" class="modal" onclick="window.closeModalOnBackdrop(event)">
+    <div class="w-full max-w-lg rounded-[2rem] p-6 popupGlass">
+      <div class="flex items-center justify-between">
+        <button class="btn2 h-10 px-4" onclick="window.closeModal('settingsModal')">
+          <span class="inline-flex items-center gap-2">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="none" class="w-4 h-4">
+              <path d="M9.75 3.75 5.75 8l4 4.25" stroke="rgba(226,232,240,0.92)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+            Back
+          </span>
+        </button>
+        <div>
+          <p class="text-[10px] font-black uppercase tracking-[0.35em] text-slate-500 text-right">Settings</p>
+          <p class="mt-1 text-lg font-black text-right">Preferences</p>
+        </div>
+      </div>
+
+      <div id="settingsBlank" class="mt-5 rounded-2xl bg-white/5 border border-white/10 min-h-[220px]"></div>
+      <p class="mt-3 text-[11px] text-slate-500">Placeholder view — add settings here later.</p>
+    </div>
+  </div>
+
+  <!-- Price Modal -->
+  <div id="priceModal" class="modal" onclick="window.closeModalOnBackdrop(event)">
+    <div class="w-full max-w-2xl rounded-[2rem] p-6 popupGlass">
+      <div class="flex items-center justify-between gap-4">
+        <div class="flex items-center gap-3 min-w-0">
+          <span id="priceTokenIcon" class="tokenIcon" style="--ti-size: 42px" data-token="PIM"><span class="tokenGlyph">P</span></span>
+          <div class="min-w-0">
+            <p class="text-[10px] font-black uppercase tracking-[0.35em] text-slate-500">All-time price history</p>
+            <p id="priceTokenTitle" class="mt-1 text-lg font-black truncate">PIM</p>
+          </div>
+        </div>
+        <button class="btn2 h-10 px-4" onclick="window.closeModal('priceModal')">Close</button>
+      </div>
+
+      <div class="mt-4 grid grid-cols-1 sm:grid-cols-3 gap-3">
+        <div class="p-4 rounded-2xl bg-white/5 border border-white/10">
+          <p class="text-[9px] font-black uppercase tracking-widest text-slate-500">Current</p>
+          <p id="priceNow" class="mt-1 text-lg font-black tabular-nums">—</p>
+          <p class="mt-1 text-[11px] text-slate-400">USDT per token</p>
+        </div>
+        <div class="p-4 rounded-2xl bg-white/5 border border-white/10">
+          <p class="text-[9px] font-black uppercase tracking-widest text-slate-500">Change</p>
+          <p id="priceChange" class="mt-1 text-lg font-black tabular-nums">—</p>
+          <p class="mt-1 text-[11px] text-slate-400">since first record</p>
+        </div>
+        <div class="p-4 rounded-2xl bg-white/5 border border-white/10">
+          <p class="text-[9px] font-black uppercase tracking-widest text-slate-500">Samples</p>
+          <p id="priceSamples" class="mt-1 text-lg font-black tabular-nums">—</p>
+          <p class="mt-1 text-[11px] text-slate-400">stored locally</p>
+        </div>
+      </div>
+
+      <div class="mt-4 chartWrap">
+        <svg id="priceChart" class="chartSvg" viewBox="0 0 800 220" preserveAspectRatio="none" aria-label="Price chart"></svg>
+      </div>
+
+      <p id="priceHint" class="mt-3 text-[11px] text-slate-500">Rates auto-sample in the background and are stored locally for this user.</p>
+    </div>
+  </div>
+
+  <script>
+    // Fresh build state
+    const STORAGE_PREFIX = 'pim_ar_wallet_';
+    const PIM_USDT = 0.10;
+    const PIM_MINT_CAP = 10_000_000;
+    const PIM_INTEREST_RATE = 0.005; // 0.50% interest
+    const PIM_INTEREST_PERIOD_MS = 24 * 60 * 60 * 1000; // per day
+
+    const PIM_NODE_MARKER = 'PIM_NODE_V1';
+    const PIM_NODE_DIRNAME = 'PIM_ENCRYPTED_NODES';
+    const MAX_TEXT_BYTES = 8192;
+
+    const TOKEN_UI = {
+      PIM: { title: 'PIM', sub: 'PIM Token', glyph: 'P' },
+      ETH: { title: 'ETH', sub: 'Ethereum', glyph: 'Ξ' },
+      USDT: { title: 'USDT', sub: 'Tether USD', glyph: '₮' },
+      BCH: { title: 'BCH', sub: 'Bitcoin Cash', glyph: 'Ƀ' }
+    };
+
+    const tokenTitle = (token, fallback = '') => TOKEN_UI[token]?.title || fallback || token;
+    const tokenSub = (token) => TOKEN_UI[token]?.sub || '';
+    const tokenGlyph = (token) => TOKEN_UI[token]?.glyph || String(token || '?').slice(0, 1).toUpperCase();
+
+    function createTokenIconNode(token, extraClass = '') {
+      const icon = document.createElement('span');
+      icon.className = `tokenIcon ${extraClass}`.trim();
+      icon.dataset.token = token;
+      const glyph = document.createElement('span');
+      glyph.className = 'tokenGlyph';
+      glyph.textContent = tokenGlyph(token);
+      icon.appendChild(glyph);
+      return icon;
+    }
+
+    function tokenIconHTML(token, extraClass = '') {
+      const cls = ['tokenIcon', extraClass].filter(Boolean).join(' ');
+      const safeToken = String(token || '').replace(/[^A-Z0-9_\-]/gi, '');
+      const glyph = tokenGlyph(token);
+      return `<span class="${cls}" data-token="${safeToken}"><span class="tokenGlyph">${glyph}</span></span>`;
+    }
+
+    // Rates are expressed as "1 TOKEN = X USDT" for converter preview.
+    // PIM is fixed in this demo.
+    const DEFAULT_RATES_USDT = {
+      USDT: 1,
+      PIM: PIM_USDT,
+      ETH: 2500,
+      BCH: 250
+    };
+
+    const KNOWN_EXTENSIONS = new Set([
+      'txt','md','pdf','png','jpg','jpeg','gif','webp','svg',
+      'json','csv','xml','yml','yaml','log',
+      'js','ts','html','css','py','java','c','cpp','h','hpp','go','rs','php','rb','sh',
+      'zip','rar','7z','tar','gz',
+      'mp3','wav','mp4','mov','mkv'
+    ]);
+
+    let state = {
+      session: { user: null },
+      balances: { PIM: 0, ETH: 0, USDT: 0, BCH: 0 },
+      ratesUsdt: { ...DEFAULT_RATES_USDT },
+      addresses: {},
+      tx: [],
+      lastScan: null,
+      deepScanText: false,
+      unreadableTypePool: {},
+      pimMintedTotalFromDir: 0,
+      interestActive: false,
+      pimInterestLastAt: 0,
+      pimInterestAccruedTotal: 0,
+      artifacts: [],
+      priceHistory: {}
+    };
+
+    let nodeParentHandle = null;
+    let nodeDirHandle = null;
+
+    function toast(msg) {
+      const t = document.getElementById('toast');
+      const tt = document.getElementById('toastText');
+      if (!t || !tt) return alert(msg);
+      tt.textContent = msg;
+      t.classList.remove('opacity-0');
+      t.classList.add('opacity-100');
+      setTimeout(() => {
+        t.classList.add('opacity-0');
+        t.classList.remove('opacity-100');
+      }, 2600);
+    }
+
+    function uid(len = 16) {
+      const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+      const arr = new Uint8Array(len);
+      crypto.getRandomValues(arr);
+      let out = '';
+      for (let i = 0; i < len; i++) out += chars[arr[i] % chars.length];
+      return out;
+    }
+
+    function storageKey() {
+      return STORAGE_PREFIX + (state.session.user?.uid || 'guest');
+    }
+
+    function load() {
+      try {
+        const raw = localStorage.getItem(storageKey());
+        if (raw) {
+          const parsed = JSON.parse(raw);
+          state.balances = parsed.balances || state.balances;
+          state.ratesUsdt = parsed.ratesUsdt || state.ratesUsdt;
+          state.addresses = parsed.addresses || state.addresses;
+          state.tx = Array.isArray(parsed.tx) ? parsed.tx : state.tx;
+          state.artifacts = Array.isArray(parsed.artifacts) ? parsed.artifacts : [];
+          state.unreadableTypePool = parsed.unreadableTypePool && typeof parsed.unreadableTypePool === 'object' ? parsed.unreadableTypePool : {};
+          state.deepScanText = !!parsed.deepScanText;
+          state.pimMintedTotalFromDir = Number(parsed.pimMintedTotalFromDir || 0);
+          state.interestActive = !!parsed.interestActive;
+          state.pimInterestLastAt = Number(parsed.pimInterestLastAt || 0);
+          state.pimInterestAccruedTotal = Number(parsed.pimInterestAccruedTotal || 0);
+          state.priceHistory = parsed.priceHistory && typeof parsed.priceHistory === 'object' ? parsed.priceHistory : state.priceHistory;
+        }
+      } catch (e) {
+        console.warn('load error', e);
+      }
+
+      // Ensure supported token balances exist.
+      state.balances.PIM = Number(state.balances.PIM || 0);
+      state.balances.ETH = Number(state.balances.ETH || 0);
+      state.balances.USDT = Number(state.balances.USDT || 0);
+      state.balances.BCH = Number(state.balances.BCH || 0);
+
+      // Ensure deposit addresses exist (demo-only).
+      if (!state.addresses || typeof state.addresses !== 'object') state.addresses = {};
+      if (!state.addresses.PIM) state.addresses.PIM = `PIM-${uid(22)}`;
+      if (!state.addresses.ETH) state.addresses.ETH = `ETH-${uid(22)}`;
+      if (!state.addresses.USDT) state.addresses.USDT = `USDT-${uid(22)}`;
+      if (!state.addresses.BCH) state.addresses.BCH = `BCH-${uid(22)}`;
+
+      // Ensure price history structure exists.
+      if (!state.priceHistory || typeof state.priceHistory !== 'object') state.priceHistory = {};
+      for (const t of ['PIM','ETH','USDT','BCH']) {
+        if (!Array.isArray(state.priceHistory[t])) state.priceHistory[t] = [];
+      }
+    }
+
+    function save() {
+      try {
+        localStorage.setItem(storageKey(), JSON.stringify({
+          balances: state.balances,
+          ratesUsdt: state.ratesUsdt,
+          addresses: state.addresses,
+          tx: state.tx,
+          deepScanText: state.deepScanText,
+          unreadableTypePool: state.unreadableTypePool,
+          pimMintedTotalFromDir: state.pimMintedTotalFromDir,
+          interestActive: state.interestActive,
+          pimInterestLastAt: state.pimInterestLastAt,
+          pimInterestAccruedTotal: state.pimInterestAccruedTotal,
+          artifacts: state.artifacts,
+          priceHistory: state.priceHistory
+        }));
+      } catch (e) {
+        console.warn('save error', e);
+      }
+    }
+
+    function formatZar(n) {
+      const v = Number(n || 0);
+      return `R ${v.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+    }
+
+    function fmt(n) {
+      const v = Number(n || 0);
+      return v.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    }
+
+    window.scrollToSend = () => {
+      window.openModal?.('sendModal');
+      setTimeout(() => document.getElementById('sendTo')?.focus(), 250);
+    };
+
+    function setupHeaderMelt() {
+      if (window.__pimHeaderMeltReady) return;
+      const header = document.getElementById('appHeader');
+      const scroller = document.getElementById('appMain');
+      if (!header || !scroller) return;
+
+      window.__pimHeaderMeltReady = true;
+
+      let lastScrollTop = 0;
+      let target = 0;
+      let current = 0;
+      let raf = 0;
+
+      const tick = () => {
+        current += (target - current) * 0.14;
+        if (Math.abs(target - current) < 0.002) current = target;
+        header.style.setProperty('--melt', current.toFixed(3));
+        header.classList.toggle('meltHidden', current > 0.97);
+        raf = current === target ? 0 : requestAnimationFrame(tick);
+      };
+
+      const setTarget = (t) => {
+        target = Math.max(0, Math.min(1, t));
+        if (!raf) raf = requestAnimationFrame(tick);
+      };
+
+      scroller.addEventListener('scroll', () => {
+        const st = scroller.scrollTop || 0;
+        const delta = st - lastScrollTop;
+        lastScrollTop = st;
+
+        if (st <= 0) return setTarget(0);
+
+        // Scroll down -> melt away, scroll up -> reveal.
+        if (delta > 4 && st > 18) setTarget(1);
+        else if (delta < -4) setTarget(0);
+      }, { passive: true });
+
+      // Ensure initial visible state.
+      header.style.setProperty('--melt', '0');
+      header.classList.remove('meltHidden');
+    }
+
+    function setupSelectMelt() {
+      if (window.__pimSelectMeltReady) return;
+      window.__pimSelectMeltReady = true;
+
+      const closeAll = (exceptWrap = null) => {
+        document.querySelectorAll('.selectWrap.open').forEach(w => {
+          if (exceptWrap && w === exceptWrap) return;
+          w.classList.remove('open');
+        });
+      };
+
+      document.addEventListener('pointerdown', (e) => {
+        const wrap = e.target.closest?.('.selectWrap');
+        closeAll(wrap || null);
+      }, { passive: true });
+
+      document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') closeAll();
+      });
+
+      const enhanceSelect = (selectEl) => {
+        if (!selectEl || selectEl.dataset.enhancedSelect === '1') return;
+        selectEl.dataset.enhancedSelect = '1';
+
+        const originalClasses = selectEl.className || '';
+        const btnClass = originalClasses
+          .split(/\s+/)
+          .filter(c => c && c !== 'selectUI')
+          .join(' ');
+
+        const wrap = document.createElement('div');
+        wrap.className = 'selectWrap';
+
+        // Insert wrap in place
+        selectEl.parentNode.insertBefore(wrap, selectEl);
+        wrap.appendChild(selectEl);
+
+        selectEl.classList.add('selectNative');
+
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = `${btnClass} selectBtn`;
+        btn.setAttribute('aria-haspopup', 'listbox');
+        btn.setAttribute('aria-expanded', 'false');
+
+        const btnMain = document.createElement('span');
+        btnMain.className = 'selectBtnMain';
+
+        const btnIcon = createTokenIconNode('PIM', 'tokenIconBtn');
+        btnMain.appendChild(btnIcon);
+
+        const btnText = document.createElement('span');
+        btnText.className = 'selectBtnText';
+        btnMain.appendChild(btnText);
+
+        btn.appendChild(btnMain);
+
+        const chevron = document.createElement('span');
+        chevron.className = 'selectChevron';
+        chevron.innerHTML = "<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none'><path d='M4.25 6.25L8 10l3.75-3.75' stroke='rgba(226,232,240,0.92)' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'/></svg>";
+
+        const menu = document.createElement('div');
+        menu.className = 'selectMenu';
+        menu.setAttribute('role', 'listbox');
+
+        const buildItems = () => {
+          menu.innerHTML = '';
+          Array.from(selectEl.options).forEach((opt) => {
+            const item = document.createElement('button');
+            item.type = 'button';
+            item.className = `selectItem${opt.selected ? ' selected' : ''}`;
+            item.setAttribute('role', 'option');
+            item.setAttribute('aria-selected', opt.selected ? 'true' : 'false');
+            item.dataset.value = opt.value;
+
+            const leftRow = document.createElement('div');
+            leftRow.className = 'selectItemLeftRow';
+
+            const icon = createTokenIconNode(opt.value, 'tokenIconBtn');
+            leftRow.appendChild(icon);
+
+            const leftCol = document.createElement('div');
+            leftCol.className = 'selectItemLeft';
+
+            const title = document.createElement('div');
+            title.className = 'selectItemTitle';
+            title.textContent = tokenTitle(opt.value, opt.textContent);
+            leftCol.appendChild(title);
+
+            const subTxt = tokenSub(opt.value);
+            if (subTxt) {
+              const sub = document.createElement('div');
+              sub.className = 'selectItemSub';
+              sub.textContent = subTxt;
+              leftCol.appendChild(sub);
+            }
+
+            leftRow.appendChild(leftCol);
+
+            const right = document.createElement('div');
+            right.className = 'selectItemRight';
+            right.innerHTML = "<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none'><path d='M4 8.25l2.5 2.5L12 5.25' stroke='rgba(252,109,38,0.95)' stroke-width='2.0' stroke-linecap='round' stroke-linejoin='round'/></svg>";
+
+            item.appendChild(leftRow);
+            item.appendChild(right);
+
+            if (opt.disabled) {
+              item.disabled = true;
+              item.style.opacity = '0.55';
+            }
+
+            item.addEventListener('click', () => {
+              if (opt.disabled) return;
+              selectEl.value = opt.value;
+              selectEl.dispatchEvent(new Event('change', { bubbles: true }));
+              wrap.classList.remove('open');
+              btn.setAttribute('aria-expanded', 'false');
+              btn.focus({ preventScroll: true });
+            });
+
+            menu.appendChild(item);
+          });
+        };
+
+        const sync = () => {
+          const selected = selectEl.options[selectEl.selectedIndex];
+          const val = selected?.value || '';
+          btnText.textContent = selected ? tokenTitle(val, selected.textContent) : 'Select';
+          btnIcon.dataset.token = val;
+          const g = btnIcon.querySelector('.tokenGlyph');
+          if (g) g.textContent = tokenGlyph(val);
+
+          // Update menu selected state if it exists
+          Array.from(menu.querySelectorAll('.selectItem')).forEach((node) => {
+            const isSel = node.dataset.value === selectEl.value;
+            node.classList.toggle('selected', isSel);
+            node.setAttribute('aria-selected', isSel ? 'true' : 'false');
+          });
+        };
+
+        btn.addEventListener('click', (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          const willOpen = !wrap.classList.contains('open');
+          closeAll(wrap);
+          wrap.classList.toggle('open', willOpen);
+          btn.setAttribute('aria-expanded', willOpen ? 'true' : 'false');
+          if (willOpen) {
+            buildItems();
+            sync();
+            // Scroll selected into view
+            const sel = menu.querySelector('.selectItem.selected');
+            sel?.scrollIntoView({ block: 'nearest' });
+          }
+        });
+
+        selectEl.addEventListener('change', sync);
+
+        // Mount
+        wrap.appendChild(btn);
+        wrap.appendChild(chevron);
+        wrap.appendChild(menu);
+        sync();
+      };
+
+      document.querySelectorAll('select').forEach(enhanceSelect);
+    }
+
+    function showApp() {
+      document.getElementById('auth').classList.add('hidden');
+      document.getElementById('app').classList.remove('hidden');
+      document.getElementById('app').classList.remove('fadeIn');
+      // Restart animation
+      void document.getElementById('app').offsetWidth;
+      document.getElementById('app').classList.add('fadeIn');
+      window.renderUserHeader?.();
+      setupHeaderMelt();
+      setupSelectMelt();
+      renderAll();
+      startAutoRateSampling();
+    }
+
+    function showAuth() {
+      document.getElementById('app').classList.add('hidden');
+      document.getElementById('auth').classList.remove('hidden');
+      document.getElementById('auth').classList.remove('fadeIn');
+      void document.getElementById('auth').offsetWidth;
+      document.getElementById('auth').classList.add('fadeIn');
+    }
+
+    // ------------------------
+    // OAuth (GitLab PKCE)
+    // ------------------------
+    const GL_SCOPES = ['read_user','profile','email'];
+
+    function base64Url(bytes) {
+      const bin = String.fromCharCode(...bytes);
+      return btoa(bin).replace(/=/g,'').replace(/\+/g,'-').replace(/\//g,'_');
+    }
+
+    async function sha256(str) {
+      const enc = new TextEncoder();
+      const data = enc.encode(str);
+      const hash = await crypto.subtle.digest('SHA-256', data);
+      return new Uint8Array(hash);
+    }
+
+    async function pkceChallenge(verifier) {
+      const h = await sha256(verifier);
+      return base64Url(h);
+    }
+
+    function redirectUri() {
+      // trailing slash matters if you registered it that way
+      return location.origin + location.pathname;
+    }
+
+    window.startLogin = async () => {
+      const base = document.getElementById('glBase').value.trim().replace(/\/$/, '');
+      const clientId = document.getElementById('glClient').value.trim();
+      const secret = document.getElementById('glSecret').value.trim();
+      if (!base || !clientId) return toast('Enter GitLab URL + Application ID');
+
+      const stateStr = uid(28);
+      const verifier = uid(64);
+      const challenge = await pkceChallenge(verifier);
+
+      sessionStorage.setItem('pim_gl_state', stateStr);
+      sessionStorage.setItem('pim_gl_verifier', verifier);
+      sessionStorage.setItem('pim_gl_base', base);
+      sessionStorage.setItem('pim_gl_client', clientId);
+      sessionStorage.setItem('pim_gl_redirect', redirectUri());
+      if (secret) sessionStorage.setItem('pim_gl_secret', secret);
+
+      const u = new URL(base + '/oauth/authorize');
+      u.searchParams.set('client_id', clientId);
+      u.searchParams.set('redirect_uri', redirectUri());
+      u.searchParams.set('response_type', 'code');
+      u.searchParams.set('state', stateStr);
+      u.searchParams.set('scope', GL_SCOPES.join(' '));
+      u.searchParams.set('code_challenge', challenge);
+      u.searchParams.set('code_challenge_method', 'S256');
+
+      location.href = u.toString();
+    };
+
+    async function handleOAuthRedirect() {
+      const url = new URL(location.href);
+      const code = url.searchParams.get('code');
+      const returnedState = url.searchParams.get('state');
+      const err = url.searchParams.get('error');
+      const errDesc = url.searchParams.get('error_description');
+
+      if (err) {
+        toast('Auth error: ' + (errDesc || err));
+        history.replaceState({}, '', redirectUri());
+        return;
+      }
+      if (!code) return;
+
+      const savedState = sessionStorage.getItem('pim_gl_state');
+      if (returnedState !== savedState) {
+        toast('State mismatch. Try login again.');
+        history.replaceState({}, '', redirectUri());
+        return;
+      }
+
+      const base = sessionStorage.getItem('pim_gl_base');
+      const clientId = sessionStorage.getItem('pim_gl_client');
+      const secret = sessionStorage.getItem('pim_gl_secret');
+      const verifier = sessionStorage.getItem('pim_gl_verifier');
+      const redir = sessionStorage.getItem('pim_gl_redirect');
+
+      const payload = new URLSearchParams({
+        client_id: clientId,
+        code,
+        grant_type: 'authorization_code',
+        redirect_uri: redir,
+        code_verifier: verifier
+      });
+      if (secret) payload.set('client_secret', secret);
+
+      const tokenRes = await fetch(base + '/oauth/token', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: payload
+      });
+      if (!tokenRes.ok) {
+        const t = await tokenRes.text();
+        toast('Token exchange failed');
+        console.error(t);
+        history.replaceState({}, '', redirectUri());
+        return;
+      }
+      const tokens = await tokenRes.json();
+      sessionStorage.setItem('pim_gl_tokens', JSON.stringify(tokens));
+
+      const meRes = await fetch(base + '/api/v4/user', {
+        headers: { Authorization: `Bearer ${tokens.access_token}` }
+      });
+      if (!meRes.ok) {
+        toast('Failed to fetch user');
+        history.replaceState({}, '', redirectUri());
+        return;
+      }
+      const me = await meRes.json();
+      const user = {
+        uid: `gitlab-${me.id}`,
+        username: me.username || 'user',
+        name: me.name || me.username || 'GitLab User',
+        avatarUrl: me.avatar_url || ''
+      };
+      sessionStorage.setItem('pim_gl_user', JSON.stringify(user));
+      state.session.user = user;
+
+      // clean url
+      history.replaceState({}, '', redirectUri());
+
+      load();
+      showApp();
+      toast('Welcome ' + (user.name || user.username));
+    }
+
+    window.enterGuest = () => {
+      state.session.user = null;
+      load();
+      showApp();
+      toast('Guest mode');
+    };
+
+    window.logout = () => {
+      sessionStorage.removeItem('pim_gl_tokens');
+      sessionStorage.removeItem('pim_gl_user');
+      state.session.user = null;
+      showAuth();
+      toast('Logged out');
+    };
+
+    window.renderUserHeader = () => {
+      const user = state.session.user;
+      const nameEl = document.getElementById('userName');
+      const handleEl = document.getElementById('userHandle');
+      const imgEl = document.getElementById('userAvatarImg');
+      const fbEl = document.getElementById('userAvatarFallback');
+      const wrap = document.getElementById('userAvatarWrap');
+
+      const isGuest = !user;
+      const name = isGuest ? 'Guest' : (user.name || user.username || 'GitLab User');
+      const handle = isGuest ? 'Guest mode' : ('@' + (user.username || 'user'));
+      const avatarUrl = isGuest ? '' : (user.avatarUrl || user.avatar_url || '');
+
+      if (nameEl) nameEl.textContent = name;
+      if (handleEl) handleEl.textContent = handle;
+      if (wrap) wrap.dataset.token = isGuest ? 'PIM' : 'ETH';
+
+      const fallbackGlyph = (name || 'G').trim().slice(0, 1).toUpperCase();
+      if (fbEl) fbEl.textContent = fallbackGlyph;
+
+      if (imgEl) {
+        if (avatarUrl) {
+          imgEl.src = avatarUrl;
+          imgEl.style.display = 'block';
+          imgEl.onerror = () => {
+            imgEl.style.display = 'none';
+          };
+        } else {
+          imgEl.removeAttribute('src');
+          imgEl.style.display = 'none';
+        }
+      }
+    };
+
+    // ------------------------
+    // Rates + converter (USDT base)
+    // ------------------------
+    async function fetchRatesUsdt() {
+      // best-effort: CoinGecko (may be rate-limited). Falls back to DEFAULT_RATES_USDT.
+      try {
+        const url = 'https://api.coingecko.com/api/v3/simple/price?ids=ethereum,bitcoin-cash,tether&vs_currencies=usd';
+        const r = await fetch(url);
+        if (!r.ok) throw new Error('rate fetch failed');
+        const j = await r.json();
+
+        const eth = j?.ethereum?.usd;
+        const bch = j?.['bitcoin-cash']?.usd;
+        const tether = j?.tether?.usd;
+
+        const out = { ...state.ratesUsdt };
+        out.PIM = PIM_USDT;
+        if (typeof tether === 'number' && tether > 0) out.USDT = tether;
+        else out.USDT = 1;
+        if (typeof eth === 'number' && eth > 0) out.ETH = eth;
+        if (typeof bch === 'number' && bch > 0) out.BCH = bch;
+
+        state.ratesUsdt = out;
+        save();
+        return true;
+      } catch (e) {
+        console.warn('rates fallback', e);
+        state.ratesUsdt = { ...DEFAULT_RATES_USDT, PIM: PIM_USDT };
+        save();
+        return false;
+      }
+    }
+
+    window.refreshRates = async () => {
+      const ok = await fetchRatesUsdt();
+      updateConverter();
+      window.updateSendConverter?.();
+      toast(ok ? 'Rates updated' : 'Using fallback rates');
+    };
+
+        recordPricePoint();
+    function toUsdt(token, amount) {
+      const a = Number(amount || 0);
+      const rate = state.ratesUsdt[token];
+      if (!rate) return 0;
+        recordPricePoint();
+      return a * rate;
+    }
+
+
+    function recordPricePoint(at = Date.now()) {
+      if (!state.priceHistory || typeof state.priceHistory !== 'object') state.priceHistory = {};
+      for (const token of ['PIM','ETH','USDT','BCH']) {
+        if (!Array.isArray(state.priceHistory[token])) state.priceHistory[token] = [];
+        const price = Number(state.ratesUsdt?.[token] ?? 0);
+        if (!Number.isFinite(price) || price <= 0) continue;
+        const arr = state.priceHistory[token];
+        const last = arr[arr.length - 1];
+        if (last && Math.abs(Number(last.at) - at) < 55_000) continue; // ~1/min max
+        arr.push({ at, price });
+        if (arr.length > 5000) arr.splice(0, arr.length - 5000);
+      }
+      save();
+    }
+
+    let __rateTimer = 0;
+    function startAutoRateSampling() {
+      if (__rateTimer) return;
+      // seed a point immediately
+      recordPricePoint();
+      // fetch + record every 60s
+      fetchRatesUsdt().catch(() => {});
+      __rateTimer = window.setInterval(() => {
+        fetchRatesUsdt().catch(() => {});
+      }, 60_000);
+    }
+
+    function fmtPrice(n) {
+      const v = Number(n || 0);
+      if (!Number.isFinite(v)) return '—';
+      if (v >= 1000) return v.toLocaleString(undefined, { maximumFractionDigits: 2 });
+      if (v >= 1) return v.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 4 });
+      return v.toLocaleString(undefined, { minimumFractionDigits: 4, maximumFractionDigits: 6 });
+    }
+
+    function buildSmoothPath(points) {
+      if (!points.length) return '';
+      if (points.length === 1) return `M ${points[0].x} ${points[0].y}`;
+      const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+      const d = [];
+      d.push(`M ${points[0].x} ${points[0].y}`);
+      for (let i = 0; i < points.length - 1; i++) {
+        const p0 = points[i - 1] || points[i];
+        const p1 = points[i];
+        const p2 = points[i + 1];
+        const p3 = points[i + 2] || p2;
+        const t = 0.22;
+        const c1x = p1.x + (p2.x - p0.x) * t;
+        const c1y = p1.y + (p2.y - p0.y) * t;
+        const c2x = p2.x - (p3.x - p1.x) * t;
+        const c2y = p2.y - (p3.y - p1.y) * t;
+        d.push(`C ${clamp(c1x, 0, 800)} ${clamp(c1y, 0, 220)} ${clamp(c2x, 0, 800)} ${clamp(c2y, 0, 220)} ${p2.x} ${p2.y}`);
+      }
+      return d.join(' ');
+    }
+
+    function renderPriceModal(token) {
+      const svg = document.getElementById('priceChart');
+      const icon = document.getElementById('priceTokenIcon');
+      const title = document.getElementById('priceTokenTitle');
+      const nowEl = document.getElementById('priceNow');
+      const chEl = document.getElementById('priceChange');
+      const smEl = document.getElementById('priceSamples');
+      if (!svg) return;
+
+      const t = token || 'PIM';
+      if (icon) {
+        icon.dataset.token = t;
+        const g = icon.querySelector('.tokenGlyph');
+        if (g) g.textContent = tokenGlyph(t);
+      }
+      if (title) title.textContent = tokenTitle(t, t);
+
+      const arr = Array.isArray(state.priceHistory?.[t]) ? state.priceHistory[t] : [];
+      const priceNow = Number(state.ratesUsdt?.[t] ?? (arr[arr.length - 1]?.price ?? 0));
+      if (nowEl) nowEl.textContent = priceNow ? fmtPrice(priceNow) : '—';
+      if (smEl) smEl.textContent = String(arr.length);
+
+      if (arr.length >= 2) {
+        const first = Number(arr[0].price);
+        const last = Number(arr[arr.length - 1].price);
+        const pct = first ? ((last - first) / first) * 100 : 0;
+        const sign = pct >= 0 ? '+' : '';
+        if (chEl) {
+          chEl.textContent = `${sign}${pct.toLocaleString(undefined, { maximumFractionDigits: 2 })}%`;
+          chEl.style.color = pct >= 0 ? 'rgba(134,239,172,0.95)' : 'rgba(251,113,133,0.95)';
+        }
+      } else {
+        if (chEl) {
+          chEl.textContent = '—';
+          chEl.style.color = '';
+        }
+      }
+
+      const W = 800;
+      const H = 220;
+      const padX = 18;
+      const padY = 18;
+
+      svg.innerHTML = '';
+
+      // Background defs
+      const defs = document.createElementNS('http://www.w3.org/2000/svg', 'defs');
+      const grad = document.createElementNS('http://www.w3.org/2000/svg', 'linearGradient');
+      grad.setAttribute('id', 'areaFill');
+      grad.setAttribute('x1', '0');
+      grad.setAttribute('x2', '0');
+      grad.setAttribute('y1', '0');
+      grad.setAttribute('y2', '1');
+      const s1 = document.createElementNS('http://www.w3.org/2000/svg', 'stop');
+      s1.setAttribute('offset', '0%');
+      s1.setAttribute('stop-color', 'rgba(252,109,38,0.22)');
+      const s2 = document.createElementNS('http://www.w3.org/2000/svg', 'stop');
+      s2.setAttribute('offset', '100%');
+      s2.setAttribute('stop-color', 'rgba(252,109,38,0.00)');
+      grad.appendChild(s1);
+      grad.appendChild(s2);
+      defs.appendChild(grad);
+      svg.appendChild(defs);
+
+      // Grid
+      for (let i = 1; i <= 3; i++) {
+        const y = (H / 4) * i;
+        const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+        line.setAttribute('x1', '0');
+        line.setAttribute('x2', String(W));
+        line.setAttribute('y1', String(y));
+        line.setAttribute('y2', String(y));
+        line.setAttribute('class', 'chartGrid');
+        svg.appendChild(line);
+      }
+
+      if (arr.length < 2) {
+        const txt = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+        txt.setAttribute('x', String(W / 2));
+        txt.setAttribute('y', String(H / 2));
+        txt.setAttribute('text-anchor', 'middle');
+        txt.setAttribute('fill', 'rgba(226,232,240,0.65)');
+        txt.setAttribute('font-size', '12');
+        txt.textContent = 'Collecting price history…';
+        svg.appendChild(txt);
+        return;
+      }
+
+      const prices = arr.map(p => Number(p.price)).filter(v => Number.isFinite(v));
+      let min = Math.min(...prices);
+      let max = Math.max(...prices);
+      if (!Number.isFinite(min) || !Number.isFinite(max)) return;
+      if (min === max) {
+        min *= 0.98;
+        max *= 1.02;
+      }
+
+      const pts = arr.map((p, i) => {
+        const x = padX + (i * (W - padX * 2)) / (arr.length - 1);
+        const yNorm = (Number(p.price) - min) / (max - min);
+        const y = padY + (1 - yNorm) * (H - padY * 2);
+        return { x: Number(x.toFixed(3)), y: Number(y.toFixed(3)) };
+      });
+
+      const pathD = buildSmoothPath(pts);
+      const areaD = pathD + ` L ${pts[pts.length - 1].x} ${H} L ${pts[0].x} ${H} Z`;
+
+      const area = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+      area.setAttribute('d', areaD);
+      area.setAttribute('class', 'chartArea');
+      svg.appendChild(area);
+
+      const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+      path.setAttribute('d', pathD);
+      path.setAttribute('class', 'chartPath');
+      svg.appendChild(path);
+
+      const lastPt = pts[pts.length - 1];
+      const glow = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+      glow.setAttribute('cx', String(lastPt.x));
+      glow.setAttribute('cy', String(lastPt.y));
+      glow.setAttribute('r', '10');
+      glow.setAttribute('fill', 'rgba(252,109,38,0.18)');
+      svg.appendChild(glow);
+
+      const ball = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+      ball.setAttribute('cx', String(lastPt.x));
+      ball.setAttribute('cy', String(lastPt.y));
+      ball.setAttribute('r', '4.6');
+      ball.setAttribute('fill', 'rgba(255,255,255,0.92)');
+      ball.setAttribute('class', 'chartBall');
+      svg.appendChild(ball);
+    }
+
+    window.openPrice = (token) => {
+      recordPricePoint();
+      window.openModal?.('priceModal');
+      renderPriceModal(token);
+    };
+      state.balances.BCH += 0.01;
+      state.balances.PIM += 50;
+      pushTx({ type: 'FAUCET', token: 'MIX', amount: 0, note: 'Demo faucet' });
+      save();
+      renderAll();
+      toast('Faucet credited (demo)');
+    };
+
+    window.mintPimPrompt = () => {
+      const input = prompt('Mint how many PIM?\nRate (demo): 1 PIM = 0.10 USDT (deducts from USDT)');
+      const qty = Math.max(0, parseInt(input || '0', 10));
+      if (!qty) return;
+      const cost = qty * PIM_USDT;
+      if (state.balances.USDT < cost) return toast('Insufficient USDT');
+      state.balances.USDT -= cost;
+      state.balances.PIM += qty;
+      pushTx({ type: 'MINT_PIM', token: 'PIM', amount: qty, note: 'Minted PIM (demo)' });
+      save();
+      renderAll();
+      toast(`Minted ${qty} PIM`);
+    };
+
+    function pushTx(tx) {
+      state.tx = [
+        {
+          id: 'TX-' + uid(8),
+          at: new Date().toISOString(),
+          ...tx
+        },
+        ...state.tx
+      ].slice(0, 30);
+    }
+
+    function applyInterestIfDue() {
+      const now = Date.now();
+      if (!state.pimInterestLastAt) state.pimInterestLastAt = now;
+
+      if (!state.interestActive) {
+        // keep the clock moving so it doesn't back-pay interest from epoch
+        state.pimInterestLastAt = now;
+        return;
+      }
+
+      const elapsed = now - state.pimInterestLastAt;
+      const periods = Math.floor(elapsed / PIM_INTEREST_PERIOD_MS);
+      if (periods <= 0) return;
+
+      const before = Number(state.balances.PIM || 0);
+      const after = before * Math.pow(1 + PIM_INTEREST_RATE, periods);
+      const delta = after - before;
+
+      if (delta > 0) {
+        state.balances.PIM = after;
+        state.pimInterestAccruedTotal = Number(state.pimInterestAccruedTotal || 0) + delta;
+        pushTx({ type: 'PIM_INTEREST', token: 'PIM', amount: delta, note: `0.50% x${periods} day(s)` });
+      }
+
+      state.pimInterestLastAt = state.pimInterestLastAt + periods * PIM_INTEREST_PERIOD_MS;
+    }
+
+    window.openModal = (id) => document.getElementById(id)?.classList.add('active');
+    window.closeModal = (id) => document.getElementById(id)?.classList.remove('active');
+    window.closeModalOnBackdrop = (e) => {
+      if (e.target === e.currentTarget) e.currentTarget.classList.remove('active');
+    };
+
+    function isEvmAddress(addr) {
+      return typeof addr === 'string' && /^0x[a-fA-F0-9]{40}$/.test(addr);
+    }
+
+    function looksLikeTokenId(addr) {
+      // Example: PIM-abc123, USDT-X7f..., etc.
+      return typeof addr === 'string' && /^[A-Z]{2,6}-[A-Za-z0-9]{6,}$/.test(addr);
+    }
+
+    window.updateSendForm = () => {
+      const tokenEl = document.getElementById('sendToken');
+      const availEl = document.getElementById('sendAvail');
+      const toEl = document.getElementById('sendTo');
+      const helpEl = document.getElementById('sendHelp');
+      if (!tokenEl || !availEl || !toEl) return;
+
+      const token = tokenEl.value;
+      const bal = Number(state.balances?.[token] ?? 0);
+      availEl.textContent = `Available: ${fmt(bal)} ${token}`;
+
+      // Make it clear that the demo ledger supports multiple formats.
+      toEl.placeholder = `Address (e.g. ${token}-… or 0x…)`;
+      if (helpEl) {
+        helpEl.textContent = 'Accepted: token-style IDs like PIM-…/USDT-… or EVM 0x… addresses (demo ledger only).';
+      }
+    };
+
+    window.sendMax = () => {
+      const token = document.getElementById('sendToken')?.value;
+      const amtEl = document.getElementById('sendAmount');
+      if (!token || !amtEl) return;
+      const bal = Number(state.balances?.[token] ?? 0);
+      amtEl.value = String(bal);
+    };
+
+    window.sendTx = () => {
+      const token = document.getElementById('sendToken').value;
+      const amount = Number(document.getElementById('sendAmount').value || 0);
+      const to = document.getElementById('sendTo').value.trim();
+      if (!to) return toast('Enter destination address');
+      if (to.startsWith('0x') && !isEvmAddress(to)) return toast('Invalid EVM address (expected 0x + 40 hex)');
+      if (!Number.isFinite(amount) || amount <= 0) return toast('Enter valid amount');
+      if ((state.balances[token] || 0) < amount) return toast('Insufficient balance');
+
+      state.balances[token] -= amount;
+      pushTx({ type: 'SEND', token, amount, note: `To ${(looksLikeTokenId(to) || isEvmAddress(to)) ? to : (to.slice(0, 24) + (to.length > 24 ? '…' : ''))}` });
+      save();
+      renderAll();
+      closeModal('sendModal');
+      toast('Sent (demo)');
+    };
+
+    window.updateSendConverter = () => {
+      const token = document.getElementById('convFrom')?.value;
+      const availEl = document.getElementById('convAvail');
+      const toEl = document.getElementById('convToAddr');
+      if (!token || !availEl) return;
+      const bal = Number(state.balances?.[token] ?? 0);
+      availEl.textContent = `Available: ${fmt(bal)} ${token}`;
+      if (toEl) toEl.placeholder = `Address (e.g. ${token}-… or 0x…)`;
+    };
+
+    window.convMax = () => {
+      const token = document.getElementById('convFrom')?.value;
+      const amtEl = document.getElementById('convAmount');
+      if (!token || !amtEl) return;
+      const bal = Number(state.balances?.[token] ?? 0);
+      amtEl.value = String(bal);
+      window.updateConverter();
+    };
+
+    window.sendFromConverter = () => {
+      const token = document.getElementById('convFrom')?.value;
+      const amount = Number(document.getElementById('convAmount')?.value || 0);
+      const to = document.getElementById('convToAddr')?.value?.trim() || '';
+      if (!token) return toast('Select a token');
+      if (!to) return toast('Enter destination address');
+      if (to.startsWith('0x') && !isEvmAddress(to)) return toast('Invalid EVM address (expected 0x + 40 hex)');
+      if (!Number.isFinite(amount) || amount <= 0) return toast('Enter valid amount');
+      if ((state.balances[token] || 0) < amount) return toast('Insufficient balance');
+
+      state.balances[token] -= amount;
+      pushTx({ type: 'SEND', token, amount, note: `To ${(looksLikeTokenId(to) || isEvmAddress(to)) ? to : (to.slice(0, 24) + (to.length > 24 ? '…' : ''))}` });
+      save();
+      renderAll();
+      toast('Sent (demo)');
+    };
+
+    function renderReceive() {
+      const token = document.getElementById('recvToken')?.value || 'PIM';
+      const addr = state.addresses?.[token] || state.addresses?.PIM || '';
+      const addrEl = document.getElementById('recvAddr');
+      if (addrEl) addrEl.textContent = addr;
+
+      const qrEl = document.getElementById('qr');
+      if (qrEl) {
+        qrEl.innerHTML = '';
+        try {
+          new QRCode(qrEl, {
+            text: addr,
+            width: 160,
+            height: 160,
+            colorDark: '#FC6D26',
+            colorLight: '#0b0b10'
+          });
+        } catch (_) {}
+      }
+    }
+
+    window.renderReceive = renderReceive;
+
+    window.copyAddr = async () => {
+      try {
+        const token = document.getElementById('recvToken')?.value || 'PIM';
+        const addr = state.addresses?.[token] || state.addresses?.PIM || '';
+        await navigator.clipboard.writeText(addr);
+        toast('Copied');
+      } catch {
+        toast('Copy failed');
+      }
+    };
+
+    window.simulateGateway = (name) => {
+      pushTx({ type: 'GATEWAY', token: 'USDT', amount: 0, note: `Simulated: ${name}` });
+      save();
+      renderAll();
+      toast('Simulated gateway: ' + name);
+    };
+
+    // ------------------------
+    // Scanner + artifacts (safe)
+    // ------------------------
+    function extOf(name) {
+      const i = name.lastIndexOf('.');
+      if (i <= 0 || i === name.length - 1) return '';
+      return name.slice(i + 1).toLowerCase();
+    }
+
+    function isUnreadable(name) {
+      const ext = extOf(name);
+      if (!ext) return true;
+      return !KNOWN_EXTENSIONS.has(ext);
+    }
+
+    async function sha256Hex(text) {
+      const data = new TextEncoder().encode(text);
+      const hash = await crypto.subtle.digest('SHA-256', data);
+      const bytes = Array.from(new Uint8Array(hash));
+      return bytes.map(b => b.toString(16).padStart(2, '0')).join('');
+    }
+
+    function bytesFromBase64Url(s) {
+      const str = String(s || '').replace(/-/g, '+').replace(/_/g, '/');
+      const pad = str.length % 4 ? '='.repeat(4 - (str.length % 4)) : '';
+      const bin = atob(str + pad);
+      const out = new Uint8Array(bin.length);
+      for (let i = 0; i < bin.length; i++) out[i] = bin.charCodeAt(i);
+      return out;
+    }
+
+    function base64UrlFromBytes(bytes) {
+      return base64Url(bytes);
+    }
+
+    function updateNodeDirStatus() {
+      const el = document.getElementById('nodeDirStatus');
+      if (!el) return;
+      if (nodeDirHandle) el.textContent = `Node dir ready: ${PIM_NODE_DIRNAME}`;
+      else if (nodeParentHandle) el.textContent = `Parent selected • will create ${PIM_NODE_DIRNAME}`;
+      else el.textContent = 'No node directory selected';
+    }
+
+    function renderScan(scan) {
+      const lostEl = document.getElementById('scanLost');
+      const unreadEl = document.getElementById('scanUnreadable');
+      if (lostEl) lostEl.textContent = String(scan?.lostDirs || 0);
+      if (unreadEl) unreadEl.textContent = String(scan?.unreadableTypes || 0);
+
+      const hitEl = document.getElementById('scanNodeHits');
+      if (hitEl) hitEl.textContent = String(scan?.nodePatternHits || 0);
+
+      const capEl = document.getElementById('mintCapLine');
+      if (capEl) capEl.textContent = `${Math.floor(state.pimMintedTotalFromDir || 0).toLocaleString()} / ${PIM_MINT_CAP.toLocaleString()}`;
+
+      const deep = document.getElementById('deepScanToggle');
+      if (deep) deep.checked = !!state.deepScanText;
+
+      updateNodeDirStatus();
+
+      const poolCount = Object.keys(state.unreadableTypePool || {}).length;
+      const poolEl = document.getElementById('unreadablePoolCount');
+      if (poolEl) poolEl.textContent = String(poolCount);
+    }
+
+    window.setDeepScanText = (enabled) => {
+      state.deepScanText = !!enabled;
+      save();
+      renderScan(state.lastScan);
+      toast(state.deepScanText ? 'Deep Scan enabled (reads .txt content)' : 'Deep Scan disabled');
+    };
+
+    function renderArtifacts() {
+      const el = document.getElementById('artifactList');
+      if (!el) return;
+      if (!state.artifacts.length) {
+        el.innerHTML = '<div class="p-3 rounded-2xl bg-white/5 border border-white/10 text-[11px] text-slate-400">No artifacts yet.</div>';
+        return;
+      }
+      el.innerHTML = state.artifacts.slice(0, 10).map(a => {
+        return `
+          <div class="p-3 rounded-2xl bg-white/5 border border-white/10">
+            <p class="text-[10px] font-black text-white">${a.label}</p>
+            <p class="mt-1 text-[10px] font-mono text-orange-200 break-all">${a.onChainId}</p>
+            <p class="mt-1 text-[10px] text-slate-400">PIM minted: ${a.pimMinted} • ${new Date(a.createdAt).toLocaleString()}</p>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function renderTx() {
+      const el = document.getElementById('txList');
+      if (!el) return;
+      if (!state.tx.length) {
+        el.innerHTML = '<div class="p-4 rounded-2xl bg-white/5 border border-white/10 text-[11px] text-slate-400">No transactions yet.</div>';
+        return;
+      }
+      el.innerHTML = state.tx.map(t => {
+        const amt = t.amount
+          ? `<span class="inline-flex items-center gap-2">${tokenIconHTML(t.token, 'tokenIconSm')}<span>${fmt(t.amount)} ${tokenTitle(t.token, t.token)}</span></span>`
+          : '—';
+        return `
+          <div class="p-4 rounded-2xl bg-white/5 border border-white/10">
+            <p class="text-[9px] font-black uppercase tracking-widest text-slate-500">${t.type}</p>
+            <p class="mt-1 text-sm font-black text-white">${amt}</p>
+            <p class="mt-1 text-[11px] text-slate-400">${t.note || ''}</p>
+            <p class="mt-2 text-[10px] font-mono text-slate-500">${new Date(t.at).toLocaleString()}</p>
+          </div>
+        `;
+      }).join('');
+    }
+
+    window.pickAndScan = async () => {
+      if (!('showDirectoryPicker' in window)) {
+        toast('Directory picker not supported here. Use Fallback Pick.');
+        return;
+      }
+      try {
+        const dir = await window.showDirectoryPicker();
+        const scan = await scanDirectoryHandle(dir);
+        state.lastScan = scan;
+        // add unreadable types into pool
+        state.unreadableTypePool = state.unreadableTypePool || {};
+        for (const item of (scan.unreadableTypeItems || [])) state.unreadableTypePool[item.hash] = item.type;
+        save();
+        renderScan(scan);
+        toast('Scan complete');
+      } catch (e) {
+        console.warn(e);
+        toast('Scan cancelled');
+      }
+    };
+
+    function extensionTypeFromName(name) {
+      const base = String(name || '');
+      const idx = base.lastIndexOf('.');
+      if (idx <= 0 || idx === base.length - 1) return '(none)';
+      return base.slice(idx + 1).toLowerCase();
+    }
+
+    async function scanDirectoryHandle(dirHandle) {
+      // We do not read file contents; only names + structure.
+      const unreadableTypeSet = new Set();
+      let lostDirs = 0;
+      const lostDirHashes = [];
+      let nodePatternHits = 0;
+
+      async function scanTxtMarker(fileHandle) {
+        try {
+          const f = await fileHandle.getFile();
+          const slice = f.slice(0, MAX_TEXT_BYTES);
+          const text = await slice.text();
+          return text.includes(PIM_NODE_MARKER) ? 1 : 0;
+        } catch {
+          return 0;
+        }
+      }
+
+      async function walk(handle, path) {
+        let hasReadable = false;
+        let hasAny = false;
+
+        for await (const [name, child] of handle.entries()) {
+          hasAny = true;
+          if (child.kind === 'directory') {
+            await walk(child, path ? `${path}/${name}` : name);
+          } else if (child.kind === 'file') {
+            if (isUnreadable(name)) unreadableTypeSet.add(extensionTypeFromName(name));
+            else hasReadable = true;
+
+            if (state.deepScanText && extOf(name) === 'txt') {
+              nodePatternHits += await scanTxtMarker(child);
+            }
+          }
+        }
+
+        // Lost directory = has no readable files (empty or only unknown types)
+        if (!hasReadable) {
+          lostDirs++;
+          const h = await sha256Hex(`lostdir:${path || '.'}`);
+          lostDirHashes.push(h);
+        }
+
+        // If root has no entries at all, it is also a lost directory (already covered by !hasReadable)
+        void hasAny;
+      }
+
+      await walk(dirHandle, '');
+
+      const unreadableTypesArr = Array.from(unreadableTypeSet).sort();
+      const unreadableTypeItems = [];
+      for (const t of unreadableTypesArr) {
+        unreadableTypeItems.push({ type: t, hash: await sha256Hex(`unreadabletype:${t}`) });
+      }
+
+      return {
+        mode: 'fs-access',
+        lostDirs,
+        lostDirHashes,
+        unreadableTypes: unreadableTypesArr.length,
+        unreadableTypeItems,
+        nodePatternHits,
+        scannedAt: new Date().toISOString()
+      };
+    }
+
+    window.scanFallbackFiles = async (files) => {
+      // Fallback cannot detect empty directories; it only receives files.
+      try {
+        const unreadableTypeSet = new Set();
+        let nodePatternHits = 0;
+        for (const f of files) {
+          if (isUnreadable(f.name)) unreadableTypeSet.add(extensionTypeFromName(f.name));
+
+          if (state.deepScanText && extOf(f.name) === 'txt') {
+            try {
+              const slice = f.slice(0, MAX_TEXT_BYTES);
+              const text = await slice.text();
+              if (text.includes(PIM_NODE_MARKER)) nodePatternHits++;
+            } catch (_) {}
+          }
+        }
+        const unreadableTypesArr = Array.from(unreadableTypeSet).sort();
+        const unreadableTypeItems = [];
+        for (const t of unreadableTypesArr) {
+          unreadableTypeItems.push({ type: t, hash: await sha256Hex(`unreadabletype:${t}`) });
+        }
+        const scan = {
+          mode: 'webkitdirectory',
+          lostDirs: 0,
+          lostDirHashes: [],
+          unreadableTypes: unreadableTypesArr.length,
+          unreadableTypeItems,
+          nodePatternHits,
+          scannedAt: new Date().toISOString(),
+          note: 'Fallback mode cannot detect empty/lost directories. Use full folder picker when possible.'
+        };
+        state.lastScan = scan;
+        state.unreadableTypePool = state.unreadableTypePool || {};
+        for (const item of (scan.unreadableTypeItems || [])) state.unreadableTypePool[item.hash] = item.type;
+        save();
+        renderScan(scan);
+        toast('Fallback scan complete');
+      } catch (e) {
+        console.warn(e);
+        toast('Fallback scan error');
+      }
+    };
+
+    window.clearUnreadablePool = () => {
+      state.unreadableTypePool = {};
+      save();
+      renderScan(state.lastScan);
+      toast('Unreadable type pool cleared');
+    };
+
+    window.mintUnreadableTypeToCoin = async () => {
+      const pool = state.unreadableTypePool || {};
+      const hashes = Object.keys(pool);
+      if (!hashes.length) return toast('No unreadable types in pool');
+
+      const remaining = PIM_MINT_CAP - (state.pimMintedTotalFromDir || 0);
+      if (remaining <= 0) return toast('Mint cap reached (10,000,000)');
+
+      // Rule: 1 unreadable type => 1 PIM
+      const typeHash = hashes.sort()[0];
+      const type = pool[typeHash] || '(unknown)';
+
+      const hasInterestSignal = (state.lastScan?.nodePatternHits || 0) > 0;
+      let mintAmount = 1;
+      if (mintAmount > remaining) mintAmount = remaining;
+      if (mintAmount <= 0) return toast('Mint cap reached');
+
+      state.balances.PIM += mintAmount;
+      state.pimMintedTotalFromDir = (state.pimMintedTotalFromDir || 0) + mintAmount;
+
+      // Activate interest accrual when node patterns are detected.
+      if (hasInterestSignal) {
+        state.interestActive = true;
+        if (!state.pimInterestLastAt) state.pimInterestLastAt = Date.now();
+      }
+
+      const payload = {
+        kind: 'UNREADABLE_TYPE_COIN',
+        mint: {
+          unreadableType: type,
+          unreadableTypeHash: typeHash,
+          interestRate: PIM_INTEREST_RATE,
+          interestPeriodMs: PIM_INTEREST_PERIOD_MS,
+          interestActivated: !!hasInterestSignal,
+          nodePatternHits: state.lastScan?.nodePatternHits || 0,
+          mintedAt: new Date().toISOString(),
+          lastScan: state.lastScan ? {
+            mode: state.lastScan.mode,
+            scannedAt: state.lastScan.scannedAt,
+            unreadableTypes: state.lastScan.unreadableTypes || 0
+          } : null
+        },
+        pimMinted: mintAmount,
+        user: state.session.user ? { uid: state.session.user.uid, username: state.session.user.username } : { uid: 'guest' }
+      };
+
+      const onChainId = await sha256Hex(JSON.stringify(payload));
+      state.artifacts = [
+        {
+          onChainId,
+          label: `UnreadableType Coin • ${fmt(mintAmount)} PIM`,
+          createdAt: new Date().toISOString(),
+          pimMinted: mintAmount,
+          payload
+        },
+        ...state.artifacts
+      ].slice(0, 20);
+
+      delete state.unreadableTypePool[typeHash]; // consume 1 type
+      pushTx({ type: 'MINT_UNREADABLETYPE_COIN', token: 'PIM', amount: mintAmount, note: `On-chain id ${onChainId.slice(0, 10)}…` });
+      save();
+      renderAll();
+      toast(`Minted ${fmt(mintAmount)} PIM from unreadable type`);
+    };
+
+    async function getOrCreateNodeKeyBytes() {
+      const k = storageKey() + '_nodekey';
+      const existing = localStorage.getItem(k);
+      if (existing) return bytesFromBase64Url(existing);
+      const bytes = new Uint8Array(32);
+      crypto.getRandomValues(bytes);
+      localStorage.setItem(k, base64UrlFromBytes(bytes));
+      return bytes;
+    }
+
+    async function encryptNodeText(plainText) {
+      const keyBytes = await getOrCreateNodeKeyBytes();
+      const key = await crypto.subtle.importKey('raw', keyBytes, { name: 'AES-GCM' }, false, ['encrypt']);
+      const iv = new Uint8Array(12);
+      crypto.getRandomValues(iv);
+      const data = new TextEncoder().encode(String(plainText));
+      const ct = new Uint8Array(await crypto.subtle.encrypt({ name: 'AES-GCM', iv }, key, data));
+      return { iv: base64UrlFromBytes(iv), ct: base64UrlFromBytes(ct) };
+    }
+
+    window.selectNodeParent = async () => {
+      if (!('showDirectoryPicker' in window)) return toast('Directory picker not supported here');
+      try {
+        try {
+          nodeParentHandle = await window.showDirectoryPicker({ mode: 'readwrite' });
+        } catch {
+          nodeParentHandle = await window.showDirectoryPicker();
+        }
+        nodeDirHandle = null;
+        updateNodeDirStatus();
+        toast('Node parent selected');
+      } catch (e) {
+        console.warn(e);
+        toast('Selection cancelled');
+      }
+    };
+
+    window.generateEncryptedNode = async () => {
+      if (!('showDirectoryPicker' in window)) return toast('Directory picker not supported here');
+      try {
+        if (!nodeParentHandle) {
+          try {
+            nodeParentHandle = await window.showDirectoryPicker({ mode: 'readwrite' });
+          } catch {
+            nodeParentHandle = await window.showDirectoryPicker();
+          }
+        }
+        nodeDirHandle = await nodeParentHandle.getDirectoryHandle(PIM_NODE_DIRNAME, { create: true });
+
+        const now = new Date();
+        const filename = `node-${now.toISOString().replace(/[:.]/g,'-')}-${uid(6)}.txt`;
+        const fileHandle = await nodeDirHandle.getFileHandle(filename, { create: true });
+
+        const nodePayload = {
+          kind: PIM_NODE_MARKER,
+          createdAt: now.toISOString(),
+          note: 'Encrypted text node (demo)'
+        };
+        const enc = await encryptNodeText(JSON.stringify(nodePayload));
+        const content = [
+          PIM_NODE_MARKER,
+          JSON.stringify({ alg: 'AES-GCM', iv: enc.iv, ct: enc.ct })
+        ].join('\n');
+
+        const writable = await fileHandle.createWritable();
+        await writable.write(content);
+        await writable.close();
+
+        pushTx({ type: 'NODE_GENERATE', token: 'PIM', amount: 0, note: `Wrote ${PIM_NODE_DIRNAME}/${filename}` });
+        save();
+        renderAll();
+        toast('Encrypted node generated');
+      } catch (e) {
+        console.warn(e);
+        toast('Node generation failed');
+      }
+    };
+
+    // ------------------------
+    // Render
+    // ------------------------
+    function renderAll() {
+      applyInterestIfDue();
+      document.getElementById('balPim').textContent = fmt(state.balances.PIM);
+      document.getElementById('balEth').textContent = fmt(state.balances.ETH);
+      document.getElementById('balBch').textContent = fmt(state.balances.BCH);
+      document.getElementById('balUsdt').textContent = fmt(state.balances.USDT);
+
+      updateConverter();
+      window.updateSendConverter?.();
+      renderScan(state.lastScan);
+      renderArtifacts();
+      renderTx();
+      save();
+    }
+
+    // init
+    window.addEventListener('DOMContentLoaded', async () => {
+      setupHeaderMelt();
+      setupSelectMelt();
+      const redirEl = document.getElementById('redirectUriText');
+      if (redirEl) redirEl.textContent = location.origin + location.pathname;
+
+      await handleOAuthRedirect();
+
+      const savedUser = sessionStorage.getItem('pim_gl_user');
+      if (savedUser) {
+        try {
+          state.session.user = JSON.parse(savedUser);
+          load();
+          showApp();
+          return;
+        } catch (_) {}
+      }
+
+      showAuth();
+    });
+
+    window.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') {
+        document.querySelectorAll('.modal.active').forEach(m => m.classList.remove('active'));
+      }
+    });
+
+    // Ensure receive QR renders when opening
+    const _openModal = window.openModal;
+    window.openModal = (id) => {
+      _openModal(id);
+      if (id === 'receiveModal') renderReceive();
+      if (id === 'sendModal') window.updateSendForm?.();
+      if (id === 'priceModal') {
+        const icon = document.getElementById('priceTokenIcon');
+        const token = icon?.dataset?.token || 'PIM';
+        renderPriceModal(token);
+      }
+    };
+
+    // Keep the chart feeling alive while open.
+    let __priceLiveTimer = 0;
+    function startPriceLiveUpdates() {
+      if (__priceLiveTimer) return;
+      __priceLiveTimer = window.setInterval(() => {
+        const modal = document.getElementById('priceModal');
+        if (!modal || !modal.classList.contains('active')) return;
+        const icon = document.getElementById('priceTokenIcon');
+        const token = icon?.dataset?.token || 'PIM';
+        renderPriceModal(token);
+      }, 1100);
+    }
+    startPriceLiveUpdates();
+  </script>
+
+  <script type="module" src="./src/evm-entry.js"></script>
+</body>
+</html>

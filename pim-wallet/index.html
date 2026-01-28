@@ -1,0 +1,2204 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>PIM Secure Wallet - GitLab Edition</title>
+    <script src="./local.config.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    
+    <style>
+        :root {
+            --brand-orange: #FC6D26;
+            --brand-dark-orange: #E24329;
+            --bg-dark: #0a0a0f;
+            --surface-3d: #16161e;
+        }
+        
+        body { 
+            font-family: 'Plus Jakarta Sans', sans-serif; 
+            background: var(--bg-dark); 
+            color: #f8fafc; 
+            overflow: hidden;
+            perspective: 1200px;
+            height: 100vh;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        html { background: #06060a; }
+
+        /* Background: starry land + 3D upload-card vibe */
+        .app-bg {
+            position: fixed;
+            inset: -6px;
+            z-index: 0;
+            overflow: hidden;
+            isolation: isolate;
+            contain: paint;
+            background-color: #06060a;
+            background:
+                radial-gradient(900px 380px at 50% 108%, rgba(252,109,38,0.16), rgba(10,10,15,0) 62%),
+                radial-gradient(900px 420px at 55% -8%, rgba(255,255,255,0.12), rgba(10,10,15,0) 62%),
+                radial-gradient(1200px 800px at 70% 10%, rgba(252,109,38,0.14), rgba(10,10,15,0) 55%),
+                radial-gradient(900px 700px at 20% 25%, rgba(14,165,233,0.10), rgba(10,10,15,0) 52%),
+                linear-gradient(180deg, #06060a 0%, #0a0a0f 55%, #07070a 100%);
+            transform: translateZ(0);
+            will-change: transform;
+        }
+
+        .chroma-flux {
+            position: absolute;
+            inset: -60%;
+            z-index: 1;
+            pointer-events: none;
+            opacity: 0.58;
+            filter: blur(26px) saturate(1.18) contrast(1.04);
+            mix-blend-mode: screen;
+            background:
+                radial-gradient(50% 70% at 18% 12%, rgba(255,255,255,0.22), rgba(255,255,255,0) 70%),
+                radial-gradient(55% 80% at 82% 8%, rgba(252,109,38,0.26), rgba(252,109,38,0) 72%),
+                radial-gradient(60% 90% at 70% 78%, rgba(255,255,255,0.14), rgba(255,255,255,0) 70%),
+                radial-gradient(70% 90% at 22% 86%, rgba(252,109,38,0.18), rgba(252,109,38,0) 70%),
+                conic-gradient(from 210deg at 50% 50%, rgba(255,255,255,0.08), rgba(252,109,38,0.10), rgba(14,165,233,0.06), rgba(255,255,255,0.08));
+            animation: chromaFlux 10s ease-in-out infinite;
+        }
+
+        /* Dither layer to hide gradient banding / layer edges */
+        .grain {
+            position: absolute;
+            inset: -60%;
+            z-index: 4;
+            pointer-events: none;
+            opacity: 0.08;
+            mix-blend-mode: overlay;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)' opacity='.55'/%3E%3C/svg%3E");
+            background-repeat: repeat;
+            transform: translateZ(0);
+        }
+
+        @keyframes chromaFlux {
+            0% { transform: translate3d(-1.5%, -1%, 0) rotate(-2deg) scale(1.02); opacity: 0.55; }
+            50% { transform: translate3d(1.5%, 1%, 0) rotate(2deg) scale(1.06); opacity: 0.70; }
+            100% { transform: translate3d(-1.5%, -1%, 0) rotate(-2deg) scale(1.02); opacity: 0.55; }
+        }
+
+        .app-bg::before {
+            content: '';
+            position: absolute;
+            inset: -20%;
+            z-index: 0;
+            background:
+                radial-gradient(2px 2px at 12% 18%, rgba(255,255,255,0.8) 0 40%, rgba(255,255,255,0) 60%),
+                radial-gradient(1.5px 1.5px at 22% 42%, rgba(255,255,255,0.55) 0 40%, rgba(255,255,255,0) 60%),
+                radial-gradient(1.2px 1.2px at 78% 28%, rgba(255,255,255,0.6) 0 40%, rgba(255,255,255,0) 60%),
+                radial-gradient(1.6px 1.6px at 58% 16%, rgba(255,255,255,0.55) 0 40%, rgba(255,255,255,0) 60%),
+                radial-gradient(1.1px 1.1px at 44% 36%, rgba(255,255,255,0.45) 0 40%, rgba(255,255,255,0) 60%),
+                radial-gradient(1.3px 1.3px at 9% 62%, rgba(255,255,255,0.45) 0 40%, rgba(255,255,255,0) 60%),
+                radial-gradient(1.2px 1.2px at 88% 58%, rgba(255,255,255,0.5) 0 40%, rgba(255,255,255,0) 60%),
+                radial-gradient(1.1px 1.1px at 66% 46%, rgba(255,255,255,0.4) 0 40%, rgba(255,255,255,0) 60%);
+            opacity: 0.7;
+            filter: blur(0.2px);
+            transform: translateZ(-2px);
+            pointer-events: none;
+        }
+        /* Top “molten silver” veil to hide any edge artifacts */
+        .app-bg::after {
+            content: '';
+            position: absolute;
+            left: -12%;
+            right: -12%;
+            top: -80px;
+            height: 240px;
+            z-index: 2;
+            background:
+                radial-gradient(110% 140% at 18% 10%, rgba(255,255,255,0.22), rgba(255,255,255,0.05) 45%, rgba(255,255,255,0) 75%),
+                radial-gradient(120% 160% at 62% 0%, rgba(255,255,255,0.12), rgba(255,255,255,0) 70%),
+                linear-gradient(180deg, rgba(255,255,255,0.10), rgba(255,255,255,0));
+            opacity: 0.55;
+            filter: blur(10px) saturate(1.05);
+            mix-blend-mode: screen;
+            pointer-events: none;
+        }
+        .bg-photo {
+            position: absolute;
+            left: 50%;
+            top: 52%;
+            z-index: 3;
+            transform: translate(-50%, -50%) perspective(1100px) rotateX(10deg) rotateY(-12deg);
+            -webkit-backface-visibility: hidden;
+            backface-visibility: hidden;
+            width: min(920px, 92vw);
+            aspect-ratio: 16 / 9;
+            border-radius: 28px;
+            background:
+                radial-gradient(600px 260px at 50% 26%, rgba(255,255,255,0.16), rgba(255,255,255,0) 55%),
+                radial-gradient(1200px 700px at 60% 20%, rgba(255,255,255,0.10), rgba(0,0,0,0) 55%),
+                linear-gradient(180deg,
+                    #070712 0%,
+                    #0b0b18 35%,
+                    #0a0a10 58%,
+                    #07070a 100%
+                );
+            box-shadow:
+                0 28px 80px rgba(0,0,0,0.55),
+                0 10px 28px rgba(0,0,0,0.40),
+                inset 0 1px 0 rgba(255,255,255,0.10);
+            border: 0;
+            overflow: hidden;
+            opacity: 0.14;
+            filter: saturate(1.02) blur(0.5px);
+            -webkit-mask-image: radial-gradient(75% 70% at 50% 55%, #000 52%, rgba(0,0,0,0) 100%);
+            mask-image: radial-gradient(75% 70% at 50% 55%, #000 52%, rgba(0,0,0,0) 100%);
+        }
+        .bg-photo::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background:
+                radial-gradient(2px 2px at 18% 18%, rgba(255,255,255,0.85) 0 40%, rgba(255,255,255,0) 60%),
+                radial-gradient(1.6px 1.6px at 34% 32%, rgba(255,255,255,0.55) 0 40%, rgba(255,255,255,0) 60%),
+                radial-gradient(1.4px 1.4px at 72% 22%, rgba(255,255,255,0.6) 0 40%, rgba(255,255,255,0) 60%),
+                radial-gradient(1.5px 1.5px at 86% 38%, rgba(255,255,255,0.55) 0 40%, rgba(255,255,255,0) 60%),
+                linear-gradient(180deg, rgba(14,165,233,0.10), rgba(0,0,0,0) 52%),
+                linear-gradient(180deg, rgba(0,0,0,0) 58%, rgba(0,0,0,0.55) 78%, rgba(0,0,0,0.85) 100%);
+            opacity: 0.9;
+            pointer-events: none;
+        }
+        .bg-photo::after {
+            /* land silhouette + warm horizon */
+            content: '';
+            position: absolute;
+            inset: 0;
+            background:
+                radial-gradient(900px 220px at 50% 62%, rgba(252,109,38,0.18), rgba(0,0,0,0) 58%),
+                linear-gradient(180deg, rgba(0,0,0,0) 58%, rgba(8,8,12,0.95) 74%, rgba(6,6,10,1) 100%);
+            mask-image:
+                radial-gradient(70px 50px at 18% 70%, #000 55%, rgba(0,0,0,0) 56%),
+                radial-gradient(90px 60px at 34% 74%, #000 55%, rgba(0,0,0,0) 56%),
+                radial-gradient(120px 70px at 58% 72%, #000 55%, rgba(0,0,0,0) 56%),
+                radial-gradient(80px 55px at 76% 74%, #000 55%, rgba(0,0,0,0) 56%),
+                linear-gradient(#000, #000);
+            mask-composite: exclude;
+            -webkit-mask-composite: xor;
+            pointer-events: none;
+        }
+
+        /* Ensure app content sits above background */
+        body > *:not(.app-bg) { position: relative; z-index: 10; }
+
+        .nav-band-top {
+            background: linear-gradient(180deg, var(--brand-orange) 0%, rgba(252, 109, 38, 0.65) 40%, rgba(10,10,15,0) 100%);
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+        }
+
+        .nav-band-bottom {
+            background: linear-gradient(0deg, var(--brand-orange) 0%, rgba(252, 109, 38, 0.65) 40%, rgba(10,10,15,0) 100%);
+            border-top: 1px solid rgba(255,255,255,0.05);
+        }
+
+        .box-3d {
+            background: var(--surface-3d);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-bottom: 4px solid rgba(0, 0, 0, 0.4);
+            border-right: 2px solid rgba(0, 0, 0, 0.2);
+            box-shadow: 0 10px 30px -10px rgba(0,0,0,0.7);
+            transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+            transform-style: preserve-3d;
+            transform: translateZ(0);
+            will-change: transform;
+            -webkit-backface-visibility: hidden;
+            backface-visibility: hidden;
+            background-clip: padding-box;
+            outline: 1px solid transparent;
+            cursor: pointer;
+            user-select: none;
+        }
+
+        .box-3d:active:not(:disabled) {
+            transform: translateY(2px) scale(0.97);
+            border-bottom-width: 1px;
+            box-shadow: 0 4px 10px -5px rgba(0,0,0,0.5);
+        }
+
+        @media (hover: hover) {
+            .box-3d:hover {
+                border-color: rgba(252, 109, 38, 0.4);
+                background: #1c1c26;
+            }
+        }
+
+        .scene {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            transform: rotateX(1deg);
+        }
+
+        .brand-gradient {
+            background: linear-gradient(135deg, var(--brand-orange), var(--brand-dark-orange));
+        }
+
+        .custom-scrollbar::-webkit-scrollbar { width: 0px; }
+
+        /* Foreground PIM panel layered over the shop */
+        .pim-panel {
+            position: fixed;
+            top: 92px;
+            right: 16px;
+            width: min(420px, calc(100vw - 32px));
+            z-index: 220;
+            border-radius: 28px;
+            background: rgba(11, 11, 16, 0.72);
+            border: 1px solid rgba(255,255,255,0.12);
+            box-shadow: 0 30px 80px rgba(0,0,0,0.55);
+            backdrop-filter: blur(14px);
+            -webkit-backdrop-filter: blur(14px);
+            transform: translateZ(0);
+            will-change: transform;
+            -webkit-backface-visibility: hidden;
+            backface-visibility: hidden;
+            background-clip: padding-box;
+            outline: 1px solid transparent;
+        }
+        .pim-panel.hidden { display: none; }
+        @media (min-width: 640px) {
+            .pim-panel { top: 104px; right: 24px; }
+        }
+        @media (max-width: 640px) {
+            .pim-panel {
+                top: auto;
+                bottom: 18px;
+                left: 16px;
+                right: 16px;
+                width: auto;
+            }
+        }
+
+        .modal-overlay { 
+            background: rgba(5, 5, 8, 0.9); 
+            display: none; 
+            position: fixed; 
+            inset: 0; 
+            z-index: 300; 
+            align-items: center; 
+            justify-content: center; 
+            backdrop-filter: blur(12px); 
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            transform: translateZ(0);
+            will-change: opacity;
+        }
+        .modal-overlay.active { display: flex; opacity: 1; }
+
+        .toast { 
+            position: fixed; 
+            top: 24px; 
+            left: 50%; 
+            transform: translateX(-50%) translateY(-20px); 
+            background: #1e1e26; 
+            color: white; 
+            padding: 12px 24px; 
+            border-radius: 16px; 
+            z-index: 500; 
+            font-size: 11px; 
+            font-weight: 700;
+            border: 1px solid rgba(255,255,255,0.1);
+            opacity: 0;
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            pointer-events: none;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.4);
+            will-change: transform, opacity;
+            -webkit-backface-visibility: hidden;
+            backface-visibility: hidden;
+            background-clip: padding-box;
+            outline: 1px solid transparent;
+        }
+        .toast.active { transform: translateX(-50%) translateY(0); opacity: 1; }
+
+        .option-btn { 
+            border: 1px solid rgba(255,255,255,0.05); 
+            transition: all 0.2s; 
+            font-weight: 800; 
+            color: #64748b; 
+            font-size: 10px; 
+            letter-spacing: 0.05em;
+        }
+        .option-btn.active { 
+            border-color: var(--brand-orange); 
+            background: rgba(252, 109, 38, 0.15); 
+            color: var(--brand-orange); 
+            box-shadow: inset 0 0 10px rgba(252, 109, 38, 0.1);
+        }
+
+        @keyframes scan {
+            0% { transform: translateY(-120%); opacity: 0; }
+            50% { opacity: 1; }
+            100% { transform: translateY(120%); opacity: 0; }
+        }
+        .scan-line {
+            width: 100%;
+            height: 3px;
+            background: var(--brand-orange);
+            box-shadow: 0 0 20px var(--brand-orange), 0 0 40px var(--brand-orange);
+            position: absolute;
+            animation: scan 1.5s infinite ease-in-out;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-20px); }
+        }
+        @keyframes pulse-glow {
+            0%, 100% { opacity: 0.5; transform: scale(1); }
+            50% { opacity: 1; transform: scale(1.05); }
+        }
+        @keyframes slide-up {
+            from { opacity: 0; transform: translateY(30px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .float-anim { animation: none; }
+        .pulse-glow { animation: none; }
+        .slide-up { animation: slide-up 0.6s ease-out forwards; }
+        .slide-up-delay-1 { animation: slide-up 0.6s ease-out 0.15s forwards; opacity: 0; }
+        .slide-up-delay-2 { animation: slide-up 0.6s ease-out 0.3s forwards; opacity: 0; }
+        .slide-up-delay-3 { animation: slide-up 0.6s ease-out 0.45s forwards; opacity: 0; }
+
+        /* Asset token logos (static, responsive) */
+        .asset-logo {
+            width: clamp(44px, 5.6vw, 64px);
+            height: clamp(44px, 5.6vw, 64px);
+            border-radius: 18px;
+            display: grid;
+            place-items: center;
+            background: linear-gradient(145deg, rgba(255,255,255,0.08), rgba(0,0,0,0.35));
+            border: 1px solid rgba(255,255,255,0.10);
+            box-shadow: inset 0 10px 20px rgba(255,255,255,0.06), inset 0 -12px 18px rgba(0,0,0,0.55), 0 14px 28px rgba(0,0,0,0.35);
+            overflow: hidden;
+            transform: translateZ(0);
+            will-change: transform;
+            -webkit-backface-visibility: hidden;
+            backface-visibility: hidden;
+            background-clip: padding-box;
+            outline: 1px solid transparent;
+        }
+        .asset-logo svg { width: 72%; height: 72%; display: block; }
+        .asset-logo::after {
+            content: '';
+            position: absolute;
+            width: 140%;
+            height: 140%;
+            background: radial-gradient(circle at 30% 25%, rgba(255,255,255,0.22), rgba(255,255,255,0) 45%);
+            opacity: 0.75;
+            transform: translate(-10%, -18%);
+            pointer-events: none;
+        }
+
+        .asset-logo--pim { background: linear-gradient(145deg, rgba(252,109,38,0.25), rgba(0,0,0,0.40)); border-color: rgba(252,109,38,0.30); }
+        .asset-logo--bch { background: linear-gradient(145deg, rgba(34,197,94,0.22), rgba(0,0,0,0.42)); border-color: rgba(34,197,94,0.30); }
+        .asset-logo--usdt { background: linear-gradient(145deg, rgba(6,182,212,0.20), rgba(0,0,0,0.42)); border-color: rgba(6,182,212,0.30); }
+
+        /* (Legacy coin spinner styles kept below; no longer used in the asset list) */
+        .coin-3d {
+            --coin-size: clamp(48px, 6vw, 66px);
+            --ring-light: #d7dde5;
+            --ring-mid: #9aa3ad;
+            --ring-dark: #6b7480;
+            --core-light: #d2b06b;
+            --core-mid: #b48a3f;
+            --core-dark: #7b5c25;
+
+            position: relative;
+            width: var(--coin-size);
+            height: var(--coin-size);
+            border-radius: 50%;
+            overflow: hidden;
+            transform-style: preserve-3d;
+            animation: coin-spin 7.5s linear infinite;
+
+            /* Outer ring (silver) + subtle ring wear */
+            background:
+                radial-gradient(circle at 50% 50%, rgba(0,0,0,0) 0 57%, rgba(255,255,255,0.06) 57% 62%, rgba(0,0,0,0.35) 62% 100%),
+                conic-gradient(from 15deg,
+                    rgba(255,255,255,0.20) 0deg,
+                    rgba(0,0,0,0.22) 55deg,
+                    rgba(255,255,255,0.10) 115deg,
+                    rgba(0,0,0,0.28) 180deg,
+                    rgba(255,255,255,0.15) 245deg,
+                    rgba(0,0,0,0.24) 315deg,
+                    rgba(255,255,255,0.20) 360deg
+                ),
+                radial-gradient(circle at 30% 25%, var(--ring-light), var(--ring-mid) 45%, var(--ring-dark) 92%);
+
+            box-shadow:
+                inset 0 10px 16px rgba(255,255,255,0.10),
+                inset 0 -14px 18px rgba(0,0,0,0.55),
+                0 16px 34px rgba(0,0,0,0.45),
+                0 28px 50px rgba(0,0,0,0.22);
+        }
+
+        /* Global lighting + fine scratches */
+        .coin-3d::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background:
+                radial-gradient(70% 70% at 30% 28%, rgba(255,255,255,0.40) 0%, rgba(255,255,255,0.05) 45%, rgba(0,0,0,0.25) 75%),
+                repeating-linear-gradient(110deg, rgba(255,255,255,0.04) 0 1px, rgba(0,0,0,0) 1px 7px);
+            mix-blend-mode: soft-light;
+            opacity: 0.8;
+            pointer-events: none;
+        }
+
+        /* Rim/edge thickness illusion (ridged) */
+        .coin-edge {
+            position: absolute;
+            inset: -16%;
+            border-radius: 50%;
+            background:
+                repeating-linear-gradient(90deg, rgba(255,255,255,0.10) 0 4px, rgba(0,0,0,0.35) 4px 8px),
+                linear-gradient(90deg, rgba(0,0,0,0.55), rgba(255,255,255,0.32), rgba(0,0,0,0.62));
+            box-shadow:
+                inset 0 0 0 2px rgba(0,0,0,0.62),
+                inset 0 0 0 4px rgba(255,255,255,0.08),
+                0 14px 26px rgba(0,0,0,0.46);
+            mix-blend-mode: soft-light;
+            filter: blur(0.1px);
+            animation: coin-edge-pulse 7.5s linear infinite;
+            pointer-events: none;
+        }
+
+        .coin-ring {
+            position: absolute;
+            inset: 5.5%;
+            border-radius: 50%;
+            box-shadow:
+                inset 0 0 0 1px rgba(255,255,255,0.10),
+                inset 0 0 0 3px rgba(0,0,0,0.35),
+                inset 0 10px 18px rgba(255,255,255,0.05);
+            pointer-events: none;
+        }
+
+        /* Brass center (tinted per asset via --coin-from/--coin-to) */
+        .coin-core {
+            position: absolute;
+            inset: 18%;
+            border-radius: 50%;
+            background:
+                radial-gradient(circle at 30% 28%, rgba(255,255,255,0.20), rgba(0,0,0,0.35) 70%),
+                linear-gradient(135deg, var(--coin-from, var(--core-light)), var(--coin-to, var(--core-dark))),
+                radial-gradient(circle at 55% 55%, var(--core-light), var(--core-mid) 55%, var(--core-dark) 100%);
+            box-shadow:
+                inset 0 8px 14px rgba(255,255,255,0.10),
+                inset 0 -10px 18px rgba(0,0,0,0.55),
+                0 0 0 1px rgba(0,0,0,0.35);
+            pointer-events: none;
+        }
+
+        /* Brushed metal sheen (sweeps across face) */
+        .coin-brush {
+            position: absolute;
+            inset: 0;
+            background:
+                linear-gradient(90deg, rgba(255,255,255,0.10), rgba(255,255,255,0.0), rgba(0,0,0,0.30));
+            mix-blend-mode: soft-light;
+            filter: blur(0.35px);
+            opacity: 0.85;
+            pointer-events: none;
+        }
+
+        .coin-micro {
+            position: absolute;
+            inset: 0;
+            display: grid;
+            place-items: center;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 7px;
+            letter-spacing: 0.32em;
+            text-transform: uppercase;
+            color: rgba(255,255,255,0.55);
+            text-shadow: 0 1px 0 rgba(0,0,0,0.65);
+            transform: translateY(-17%) rotate(-10deg);
+            opacity: 0.55;
+            pointer-events: none;
+        }
+
+        .coin-face {
+            position: absolute;
+            inset: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+            gap: 2px;
+            pointer-events: none;
+        }
+
+        .coin-symbol {
+            font-family: 'JetBrains Mono', monospace;
+            font-weight: 900;
+            font-size: 15px;
+            letter-spacing: 0.12em;
+            color: rgba(255,255,255,0.92);
+            text-shadow: 0 1px 0 rgba(0,0,0,0.6), 0 6px 14px rgba(0,0,0,0.45);
+        }
+
+        .coin-sub {
+            font-family: 'JetBrains Mono', monospace;
+            font-weight: 800;
+            font-size: 7px;
+            letter-spacing: 0.38em;
+            color: rgba(0,0,0,0.35);
+            text-shadow: 0 1px 0 rgba(255,255,255,0.18);
+            mix-blend-mode: soft-light;
+        }
+
+        @keyframes coin-spin {
+            0% { transform: rotateY(0deg) rotateX(14deg) translateZ(0); }
+            25% { transform: rotateY(90deg) rotateX(14deg) translateZ(0); }
+            50% { transform: rotateY(180deg) rotateX(14deg) translateZ(0); }
+            75% { transform: rotateY(270deg) rotateX(14deg) translateZ(0); }
+            100% { transform: rotateY(360deg) rotateX(14deg) translateZ(0); }
+        }
+
+        /* Edge “thickness” pops around edge-on angles */
+        @keyframes coin-edge-pulse {
+            0%, 50%, 100% { opacity: 0.55; transform: scale(1.00); }
+            25%, 75% { opacity: 0.95; transform: scale(1.08); }
+        }
+
+        /* Auth → App “zoom-through” transition */
+        .auth-exit-zoom {
+            will-change: transform, opacity, filter;
+            transform-origin: 50% 50%;
+            animation: authExitZoom 420ms cubic-bezier(0.22, 1, 0.36, 1) forwards;
+        }
+
+        .app-enter-zoom {
+            will-change: transform, opacity, filter;
+            transform-origin: 50% 50%;
+            animation: appEnterZoom 520ms cubic-bezier(0.22, 1, 0.36, 1) forwards;
+        }
+
+        @keyframes authExitZoom {
+            0%   { opacity: 1; transform: translateZ(0) scale(1); filter: blur(0px) saturate(1); }
+            100% { opacity: 0; transform: translateZ(0) scale(1.06); filter: blur(12px) saturate(1.05); }
+        }
+
+        @keyframes appEnterZoom {
+            0%   { opacity: 0; transform: translateZ(0) scale(0.965); filter: blur(14px) saturate(1.06); }
+            100% { opacity: 1; transform: translateZ(0) scale(1); filter: blur(0px) saturate(1); }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            .auth-exit-zoom,
+            .app-enter-zoom {
+                animation: none !important;
+                filter: none !important;
+                transform: none !important;
+            }
+        }
+    </style>
+</head>
+<body class="flex flex-col">
+
+    <!-- Background layer -->
+    <div class="app-bg" aria-hidden="true">
+        <div class="chroma-flux" aria-hidden="true"></div>
+        <div class="bg-photo"></div>
+        <div class="grain" aria-hidden="true"></div>
+    </div>
+
+    <!-- Toast -->
+    <div id="toast" class="toast">
+        <span id="toast-msg">System Notification</span>
+    </div>
+
+    <!-- AUTH SCREEN -->
+    <div id="auth-screen" class="fixed inset-0 z-[200] flex items-center justify-center p-4 sm:p-6 lg:p-8 overflow-y-auto">
+        <div class="w-full max-w-6xl grid grid-cols-1 lg:grid-cols-2 gap-6 sm:gap-8 lg:gap-12 items-center my-auto">
+            
+            <!-- Login Form -->
+            <div class="w-full max-w-md mx-auto slide-up order-2 lg:order-1">
+                <div class="w-16 h-16 sm:w-20 sm:h-20 lg:w-24 lg:h-24 brand-gradient rounded-[1.5rem] sm:rounded-[2rem] flex items-center justify-center mx-auto mb-6 sm:mb-8 lg:mb-10 shadow-[0_30px_60px_rgba(252,109,38,0.25)] box-3d">
+                    <svg class="w-9 h-9 sm:w-10 sm:h-10 lg:w-12 lg:h-12 text-white" fill="currentColor" viewBox="0 0 24 24">
+                        <path d="M23.955 13.587l-1.342-4.135L19.722 2.38a.62.62 0 00-1.173 0l-2.89 7.072H8.341L5.45 2.38a.62.62 0 00-1.173 0L1.387 9.452.045 13.587a1.24 1.24 0 00.449 1.383L12 22.54l11.506-7.57a1.24 1.24 0 00.449-1.383z"/>
+                    </svg>
+                </div>
+                <h1 class="text-3xl sm:text-4xl lg:text-5xl font-extrabold text-white mb-2 tracking-tight text-center">PIM <span class="text-orange-500">VAULT</span></h1>
+                <p class="text-slate-300 text-sm sm:text-base font-bold tracking-tight text-center">Connect your GitLab account to invest</p>
+                <p class="text-slate-500 text-[9px] sm:text-[10px] font-bold uppercase tracking-[0.3em] sm:tracking-[0.5em] mb-6 sm:mb-8 lg:mb-10 text-center">GitLab Secure Node</p>
+                
+                <div class="space-y-3 sm:space-y-4 mb-6 sm:mb-8">
+                    <div>
+                        <div class="flex items-center justify-between gap-3">
+                            <label class="text-[8px] sm:text-[9px] font-black text-slate-500 uppercase ml-2 mb-2 block tracking-widest">Authentication Key</label>
+                            <button type="button" id="authKeyHelp" class="w-6 h-6 mb-1 rounded-full bg-white/10 text-slate-200 grid place-items-center border border-white/10 hover:border-orange-500/30" aria-label="Authentication Key help" title="This is a key provided to you by your login provider. Use it to sign in with the key provided.">
+                                <span class="text-[10px] font-black">?</span>
+                            </button>
+                        </div>
+                        <input id="gitlab-client-secret" type="password" class="w-full bg-black/40 border border-white/10 rounded-xl sm:rounded-2xl p-3 sm:p-4 text-[11px] sm:text-[12px] font-mono text-orange-200 outline-none focus:border-orange-500/50 transition-all" placeholder="Enter the key provided by your login provider" autocomplete="off" />
+                        <p id="authKeyHelpText" class="hidden mt-2 text-[9px] sm:text-[10px] text-slate-500 font-mono tracking-wide px-2">This is a key provided to you by your login provider (GitLab OAuth app). Use it to sign in with the key provided.</p>
+                    </div>
+                </div>
+
+                <button id="gitlab-connect" onclick="window.gitlabStartAuth()" class="w-full h-14 sm:h-16 box-3d rounded-xl sm:rounded-2xl flex items-center justify-center gap-2 sm:gap-3 text-white text-xs sm:text-sm font-black bg-gradient-to-r from-[#FC6D26] to-[#E24329] active:scale-95 shadow-[0_10px_30px_rgba(252,109,38,0.3)] transition-transform">
+                    <svg class="w-4 h-4 sm:w-5 sm:h-5 text-white" fill="currentColor" viewBox="0 0 24 24">
+                        <path d="M23.955 13.587l-1.342-4.135L19.722 2.38a.62.62 0 00-1.173 0l-2.89 7.072H8.341L5.45 2.38a.62.62 0 00-1.173 0L1.387 9.452.045 13.587a1.24 1.24 0 00.449 1.383L12 22.54l11.506-7.57a1.24 1.24 0 00.449-1.383z"/>
+                    </svg>
+                    <span id="login-text">LOGIN WITH GITLAB</span>
+                </button>
+                
+                <p class="mt-6 sm:mt-8 text-[8px] sm:text-[9px] text-slate-600 font-mono tracking-widest uppercase text-center">PKCE Authentication • All data stored locally</p>
+            </div>
+
+            <!-- Info Panel -->
+            <div class="w-full space-y-4 sm:space-y-6 lg:space-y-8 order-1 lg:order-2">
+                <div class="slide-up-delay-1">
+                    <div class="p-6 sm:p-8 rounded-2xl sm:rounded-[2.5rem] bg-gradient-to-br from-[#1a1a24] to-[#0a0a0f] border border-orange-500/10 box-3d relative overflow-hidden">
+                        <div class="absolute -right-10 -top-10 w-32 h-32 sm:w-40 sm:h-40 bg-orange-500/10 blur-[60px] rounded-full"></div>
+                        <div class="relative">
+                            <div class="w-12 h-12 sm:w-14 sm:h-14 rounded-xl sm:rounded-2xl bg-orange-500/20 flex items-center justify-center mb-4 sm:mb-6 box-3d">
+                                <svg class="w-6 h-6 sm:w-7 sm:h-7 text-orange-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/></svg>
+                            </div>
+                            <h3 class="text-lg sm:text-xl font-black text-white mb-2 sm:mb-3 tracking-tight">GitLab-Powered Storage</h3>
+                            <p class="text-xs sm:text-sm text-slate-400 leading-relaxed">Your wallet data is stored locally with GitLab authentication. No external database required.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="slide-up-delay-2">
+                    <div class="p-6 sm:p-8 rounded-2xl sm:rounded-[2.5rem] bg-[#16161d] border border-white/5 box-3d">
+                        <div class="flex items-center gap-3 sm:gap-4 mb-4 sm:mb-6">
+                            <div class="w-10 h-10 sm:w-12 sm:h-12 rounded-lg sm:rounded-xl bg-green-500/20 flex items-center justify-center box-3d flex-shrink-0">
+                                <svg class="w-5 h-5 sm:w-6 sm:h-6 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
+                            </div>
+                            <div class="flex-1 min-w-0">
+                                <p class="text-[10px] sm:text-xs font-black text-slate-500 uppercase tracking-wider mb-1">Local First</p>
+                                <p class="text-xs sm:text-sm font-bold text-white truncate">Browser-based secure storage</p>
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-3 sm:gap-4 mb-4 sm:mb-6">
+                            <div class="w-10 h-10 sm:w-12 sm:h-12 rounded-lg sm:rounded-xl bg-blue-500/20 flex items-center justify-center box-3d flex-shrink-0">
+                                <svg class="w-5 h-5 sm:w-6 sm:h-6 text-blue-500" fill="currentColor" viewBox="0 0 24 24">
+                                    <path d="M23.955 13.587l-1.342-4.135L19.722 2.38a.62.62 0 00-1.173 0l-2.89 7.072H8.341L5.45 2.38a.62.62 0 00-1.173 0L1.387 9.452.045 13.587a1.24 1.24 0 00.449 1.383L12 22.54l11.506-7.57a1.24 1.24 0 00.449-1.383z"/>
+                                </svg>
+                            </div>
+                            <div class="flex-1 min-w-0">
+                                <p class="text-[10px] sm:text-xs font-black text-slate-500 uppercase tracking-wider mb-1">GitLab Auth</p>
+                                <p class="text-xs sm:text-sm font-bold text-white truncate">OAuth 2.0 with PKCE</p>
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-3 sm:gap-4">
+                            <div class="w-10 h-10 sm:w-12 sm:h-12 rounded-lg sm:rounded-xl bg-purple-500/20 flex items-center justify-center box-3d flex-shrink-0">
+                                <svg class="w-5 h-5 sm:w-6 sm:h-6 text-purple-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                            </div>
+                            <div class="flex-1 min-w-0">
+                                <p class="text-[10px] sm:text-xs font-black text-slate-500 uppercase tracking-wider mb-1">Multi-Asset</p>
+                                <p class="text-xs sm:text-sm font-bold text-white truncate">PIM tokens & virtual cards</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- MAIN DASHBOARD -->
+    <div id="app-content" class="w-full h-full flex flex-col overflow-hidden hidden">
+        
+        <header class="px-4 sm:px-6 pt-8 sm:pt-12 pb-4 sm:pb-6 flex justify-between items-center flex-shrink-0">
+            <div class="flex items-center gap-3 sm:gap-4">
+                <div class="w-10 h-10 sm:w-12 sm:h-12 rounded-xl sm:rounded-2xl brand-gradient flex items-center justify-center box-3d shadow-lg shadow-orange-500/20 text-white">
+                    <svg class="w-6 h-6 sm:w-7 sm:h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M4 7c0-1.657 3.582-3 8-3s8 1.343 8 3-3.582 3-8 3-8-1.343-8-3Z"/>
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M4 7v4c0 1.657 3.582 3 8 3s8-1.343 8-3V7"/>
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M4 11v4c0 1.657 3.582 3 8 3s8-1.343 8-3v-4"/>
+                    </svg>
+                </div>
+                <div>
+                    <p class="text-[8px] sm:text-[9px] font-black text-slate-500 uppercase tracking-widest">Operator Node</p>
+                    <p id="userDisplayId" class="text-[10px] sm:text-[11px] font-mono text-slate-300 font-bold tracking-tight">GitLab Connected</p>
+                    <p id="gitlabUser" class="text-[8px] sm:text-[9px] font-mono text-orange-500 font-bold tracking-tight"></p>
+                </div>
+            </div>
+            <div class="flex items-center gap-2 sm:gap-3">
+                <button onclick="window.togglePimPanel(true)" class="w-11 h-11 sm:w-12 sm:h-12 rounded-xl sm:rounded-2xl box-3d flex items-center justify-center text-orange-200 bg-[#16161d] hover:text-white transition-colors flex-shrink-0" aria-label="Open PIM panel">
+                    <svg class="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"/>
+                    </svg>
+                </button>
+                <button onclick="window.handleLogout()" class="w-11 h-11 sm:w-12 sm:h-12 rounded-xl sm:rounded-2xl box-3d flex items-center justify-center text-slate-400 bg-[#16161d] hover:text-white transition-colors flex-shrink-0" aria-label="Logout">
+                    <svg class="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/></svg>
+                </button>
+            </div>
+        </header>
+
+        <!-- Foreground: PIM UI layered over shop -->
+        <section id="pimPanel" class="pim-panel hidden">
+            <div class="p-5 sm:p-6">
+                <div class="flex items-start justify-between gap-3">
+                    <div class="min-w-0">
+                        <p class="text-[10px] font-black uppercase tracking-[0.35em] text-slate-500">PIM Console</p>
+                        <p class="text-base font-black text-white truncate">Wallet Overview</p>
+                        <p id="pimPanelUser" class="mt-1 text-[10px] font-mono text-orange-300 font-bold truncate"></p>
+                    </div>
+                    <button class="w-10 h-10 rounded-2xl box-3d bg-[#16161d] text-slate-400 hover:text-white" onclick="window.togglePimPanel(false)" aria-label="Close PIM panel">
+                        <svg class="w-5 h-5 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12"/></svg>
+                    </button>
+                </div>
+
+                <div class="mt-4 grid grid-cols-2 gap-3">
+                    <div class="p-4 rounded-2xl bg-white/5 border border-white/10">
+                        <p class="text-[9px] font-black uppercase tracking-widest text-slate-500">ZAR Balance</p>
+                        <p id="pimPanelZar" class="mt-1 text-lg font-black text-white tabular-nums">R 0.00</p>
+                    </div>
+                    <div class="p-4 rounded-2xl bg-white/5 border border-white/10">
+                        <p class="text-[9px] font-black uppercase tracking-widest text-slate-500">PIM Holdings</p>
+                        <p id="pimPanelPim" class="mt-1 text-lg font-black text-white tabular-nums">0.00</p>
+                    </div>
+                </div>
+
+                <div class="mt-3 p-4 rounded-2xl bg-gradient-to-br from-[#20161a] to-[#0f0a0c] border border-orange-500/20">
+                    <div class="flex items-center justify-between gap-3">
+                        <div class="min-w-0">
+                            <p class="text-[9px] font-black uppercase tracking-widest text-orange-300">Mint</p>
+                            <p id="pimPanelWalletCount" class="text-[11px] text-slate-300">0 wallet IDs minted</p>
+                            <p class="mt-1 text-[9px] text-orange-200">Rate: 1 PIM = R2 (local simulation)</p>
+                        </div>
+                        <button onclick="window.mintPIM()" class="h-11 px-4 rounded-2xl bg-orange-500 text-white text-[10px] font-black uppercase tracking-widest shadow-[0_10px_25px_rgba(252,109,38,0.25)] hover:bg-orange-400 transition-colors">Mint PIM</button>
+                    </div>
+                </div>
+
+                <div class="mt-3">
+                    <button onclick="window.togglePimWalletList()" class="w-full h-11 rounded-2xl bg-[#16161d] border border-white/10 text-slate-200 text-[10px] font-black uppercase tracking-widest hover:text-white transition-colors">Toggle Wallet IDs</button>
+                    <div id="pimPanelWalletList" class="mt-3 hidden max-h-44 overflow-y-auto custom-scrollbar space-y-2"></div>
+                </div>
+            </div>
+        </section>
+
+        <main class="flex-1 px-4 sm:px-6 pb-20 sm:pb-28 overflow-y-auto custom-scrollbar">
+
+            <!-- Investment Hero -->
+            <section class="mt-4 sm:mt-6 mb-6">
+                <div class="box-3d rounded-[2rem] sm:rounded-[2.5rem] p-6 sm:p-8 bg-gradient-to-br from-[#171720] via-[#12121a] to-[#0f0f17] border border-white/10 relative overflow-hidden">
+                    <div class="absolute -right-10 -top-10 w-40 h-40 bg-orange-500/10 blur-[70px] rounded-full"></div>
+                    <div class="absolute -left-10 -bottom-10 w-40 h-40 bg-cyan-500/10 blur-[70px] rounded-full"></div>
+                    <div class="relative">
+                        <p class="text-[9px] sm:text-[10px] font-black text-slate-500 uppercase tracking-[0.35em] mb-2">Investment Management</p>
+                        <h2 class="text-2xl sm:text-3xl lg:text-4xl font-black text-white tracking-tight">3-Token Portfolio</h2>
+                        <p class="mt-2 text-xs sm:text-sm text-slate-400 max-w-2xl">A clean, local-first dashboard to manage PIM, BCH, and USDT with simple buy/sell controls and a clear portfolio summary.</p>
+
+                        <div class="mt-5 grid grid-cols-1 sm:grid-cols-3 gap-3">
+                            <div class="p-4 rounded-2xl bg-white/5 border border-white/10">
+                                <p class="text-[9px] font-black uppercase tracking-widest text-slate-500">Portfolio Value</p>
+                                <p id="invTotalValue" class="mt-1 text-xl font-black text-white tabular-nums">R 0.00</p>
+                            </div>
+                            <div class="p-4 rounded-2xl bg-white/5 border border-white/10">
+                                <p class="text-[9px] font-black uppercase tracking-widest text-slate-500">Cash (ZAR)</p>
+                                <p id="invCash" class="mt-1 text-xl font-black text-white tabular-nums">R 0.00</p>
+                            </div>
+                            <div class="p-4 rounded-2xl bg-white/5 border border-white/10">
+                                <p class="text-[9px] font-black uppercase tracking-widest text-slate-500">Invested Value</p>
+                                <p id="invInvested" class="mt-1 text-xl font-black text-white tabular-nums">R 0.00</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <section class="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-5 pb-10">
+                <!-- Holdings -->
+                <div class="lg:col-span-2">
+                    <div class="flex items-end justify-between gap-4 mb-3">
+                        <h3 class="text-[10px] sm:text-[11px] font-black uppercase text-slate-600 tracking-[0.3em]">Holdings</h3>
+                        <p class="text-[10px] text-slate-500 font-mono">Simulated pricing • Local state</p>
+                    </div>
+                    <div id="invHoldings" class="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4"></div>
+                </div>
+
+                <!-- Trade Panel -->
+                <aside class="box-3d rounded-[2rem] p-5 sm:p-6 bg-[#0b0b10] border border-white/10">
+                    <div class="flex items-center justify-between mb-4">
+                        <div>
+                            <p class="text-[10px] font-black uppercase tracking-[0.3em] text-slate-500">Trade</p>
+                            <p class="text-sm font-black text-white">Buy / Sell</p>
+                        </div>
+                        <button onclick="window.invAddFunds(1000)" class="h-10 px-3 rounded-2xl bg-white/5 border border-white/10 text-slate-200 text-[10px] font-black uppercase tracking-widest hover:text-white hover:border-orange-500/20 transition-colors">+ R1000</button>
+                    </div>
+
+                    <div class="space-y-3">
+                        <div>
+                            <label class="text-[9px] font-black uppercase tracking-widest text-slate-500 ml-2">Token</label>
+                            <select id="invToken" class="mt-1 w-full bg-black/40 border border-white/10 rounded-2xl p-3 text-[12px] text-white outline-none focus:border-orange-500/50">
+                                <option value="pim">PIM</option>
+                                <option value="bch">BCH</option>
+                                <option value="usdt">USDT</option>
+                            </select>
+                        </div>
+
+                        <div>
+                            <label class="text-[9px] font-black uppercase tracking-widest text-slate-500 ml-2">Buy Amount (ZAR)</label>
+                            <input id="invBuyZar" inputmode="decimal" class="mt-1 w-full bg-black/40 border border-white/10 rounded-2xl p-3 text-[12px] text-white outline-none focus:border-orange-500/50" placeholder="e.g. 250" />
+                            <div class="mt-2 flex gap-2">
+                                <button onclick="window.invQuickBuy(0.25)" class="flex-1 h-10 rounded-2xl bg-white/5 border border-white/10 text-slate-200 text-[10px] font-black uppercase tracking-widest hover:text-white">25%</button>
+                                <button onclick="window.invQuickBuy(0.5)" class="flex-1 h-10 rounded-2xl bg-white/5 border border-white/10 text-slate-200 text-[10px] font-black uppercase tracking-widest hover:text-white">50%</button>
+                                <button onclick="window.invQuickBuy(1)" class="flex-1 h-10 rounded-2xl bg-white/5 border border-white/10 text-slate-200 text-[10px] font-black uppercase tracking-widest hover:text-white">MAX</button>
+                            </div>
+                            <button onclick="window.invBuy()" class="mt-2 w-full h-12 rounded-2xl bg-orange-500 text-white font-black uppercase tracking-widest text-[11px] shadow-[0_10px_25px_rgba(252,109,38,0.25)] hover:bg-orange-400 transition-colors">Buy</button>
+                        </div>
+
+                        <div>
+                            <label class="text-[9px] font-black uppercase tracking-widest text-slate-500 ml-2">Sell Units</label>
+                            <input id="invSellUnits" inputmode="decimal" class="mt-1 w-full bg-black/40 border border-white/10 rounded-2xl p-3 text-[12px] text-white outline-none focus:border-orange-500/50" placeholder="e.g. 10" />
+                            <button onclick="window.invSell()" class="mt-2 w-full h-12 rounded-2xl bg-[#16161d] border border-white/10 text-slate-200 font-black uppercase tracking-widest text-[11px] hover:text-white hover:border-orange-500/20 transition-colors">Sell</button>
+                        </div>
+                    </div>
+
+                    <div class="mt-5 pt-4 border-t border-white/10">
+                        <p class="text-[10px] font-black uppercase tracking-[0.3em] text-slate-600 mb-2">Recent Activity</p>
+                        <div id="invActivity" class="space-y-2 max-h-44 overflow-y-auto custom-scrollbar"></div>
+                    </div>
+                </aside>
+            </section>
+        </main>
+    </div>
+
+    <!-- Cart Drawer -->
+    <div id="cartOverlay" class="modal-overlay" aria-hidden="true">
+        <div class="w-full h-full flex justify-end" onclick="window.closeCart(event)">
+            <div class="w-full max-w-md h-full bg-[#0b0b10] border-l border-white/10 p-5 sm:p-6 overflow-y-auto custom-scrollbar" onclick="event.stopPropagation()">
+                <div class="flex items-center justify-between mb-4">
+                    <div>
+                        <p class="text-[10px] font-black uppercase tracking-[0.3em] text-slate-500">Your Cart</p>
+                        <p id="cartSubtitle" class="text-sm font-black text-white">0 items</p>
+                    </div>
+                    <button class="w-10 h-10 rounded-2xl box-3d bg-[#16161d] text-slate-400 hover:text-white" onclick="window.closeCart()" aria-label="Close cart">
+                        <svg class="w-5 h-5 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12"/></svg>
+                    </button>
+                </div>
+
+                <div id="cartItems" class="space-y-3"></div>
+
+                <div class="mt-6 p-4 rounded-2xl bg-white/5 border border-white/10">
+                    <div class="flex items-center justify-between">
+                        <span class="text-[10px] font-black uppercase tracking-widest text-slate-500">Subtotal</span>
+                        <span id="cartSubtotal" class="text-base font-black text-white">R 0.00</span>
+                    </div>
+                    <button onclick="window.openCheckout()" class="mt-4 w-full h-12 rounded-2xl bg-orange-500 text-white font-black uppercase tracking-widest text-[11px] shadow-[0_10px_25px_rgba(252,109,38,0.25)] hover:bg-orange-400 transition-colors">Proceed to Checkout</button>
+                    <button onclick="window.clearCart()" class="mt-2 w-full h-11 rounded-2xl bg-[#16161d] text-slate-300 font-black uppercase tracking-widest text-[10px] hover:text-white transition-colors">Clear Cart</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Checkout Modal -->
+    <div id="checkoutOverlay" class="modal-overlay" aria-hidden="true">
+        <div class="w-full max-w-2xl mx-auto p-4 sm:p-6" onclick="window.closeCheckout(event)">
+            <div class="w-full rounded-[2rem] bg-[#0b0b10] border border-white/10 p-5 sm:p-6 box-3d" onclick="event.stopPropagation()">
+                <div class="flex items-center justify-between mb-4">
+                    <div>
+                        <p class="text-[10px] font-black uppercase tracking-[0.3em] text-slate-500">Checkout</p>
+                        <p class="text-sm font-black text-white">Customer details (simulated)</p>
+                    </div>
+                    <button class="w-10 h-10 rounded-2xl box-3d bg-[#16161d] text-slate-400 hover:text-white" onclick="window.closeCheckout()" aria-label="Close checkout">
+                        <svg class="w-5 h-5 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12"/></svg>
+                    </button>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                        <label class="text-[9px] font-black uppercase tracking-widest text-slate-500 ml-2">Full Name</label>
+                        <input id="checkoutName" class="mt-1 w-full bg-black/40 border border-white/10 rounded-2xl p-3 text-[12px] text-white outline-none focus:border-orange-500/50" placeholder="e.g. Thabo M." />
+                    </div>
+                    <div>
+                        <label class="text-[9px] font-black uppercase tracking-widest text-slate-500 ml-2">Email</label>
+                        <input id="checkoutEmail" class="mt-1 w-full bg-black/40 border border-white/10 rounded-2xl p-3 text-[12px] text-white outline-none focus:border-orange-500/50" placeholder="you@example.com" />
+                    </div>
+                    <div>
+                        <label class="text-[9px] font-black uppercase tracking-widest text-slate-500 ml-2">Phone</label>
+                        <input id="checkoutPhone" class="mt-1 w-full bg-black/40 border border-white/10 rounded-2xl p-3 text-[12px] text-white outline-none focus:border-orange-500/50" placeholder="+27 ..." />
+                    </div>
+                    <div>
+                        <label class="text-[9px] font-black uppercase tracking-widest text-slate-500 ml-2">City</label>
+                        <input id="checkoutCity" class="mt-1 w-full bg-black/40 border border-white/10 rounded-2xl p-3 text-[12px] text-white outline-none focus:border-orange-500/50" placeholder="Johannesburg" />
+                    </div>
+                    <div class="sm:col-span-2">
+                        <label class="text-[9px] font-black uppercase tracking-widest text-slate-500 ml-2">Delivery Address</label>
+                        <textarea id="checkoutAddress" rows="3" class="mt-1 w-full bg-black/40 border border-white/10 rounded-2xl p-3 text-[12px] text-white outline-none focus:border-orange-500/50" placeholder="Street, suburb, notes..."></textarea>
+                    </div>
+                </div>
+
+                <div class="mt-5 p-4 rounded-2xl bg-white/5 border border-white/10">
+                    <div class="flex items-center justify-between">
+                        <span class="text-[10px] font-black uppercase tracking-widest text-slate-500">Total</span>
+                        <span id="checkoutTotal" class="text-base font-black text-white">R 0.00</span>
+                    </div>
+                    <button onclick="window.submitOrder()" class="mt-4 w-full h-12 rounded-2xl bg-orange-500 text-white font-black uppercase tracking-widest text-[11px] shadow-[0_10px_25px_rgba(252,109,38,0.25)] hover:bg-orange-400 transition-colors">Place Order (Simulated)</button>
+                    <p class="mt-2 text-[10px] text-slate-500">This demo stores your cart + details locally in your browser for UX testing.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+    <script>
+        // GitLab-powered wallet - no Firebase
+        const STORAGE_KEY_PREFIX = 'pim_vault_';
+        
+        // Define showToast early so it's available for OAuth callback
+        window.showToast = (msg) => {
+            const t = document.getElementById('toast');
+            if (!t) {
+                console.log('Toast:', msg);
+                return;
+            }
+            const msgEl = document.getElementById('toast-msg');
+            if (msgEl) msgEl.innerText = msg;
+            t.classList.add('active');
+            setTimeout(() => t.classList.remove('active'), 3500);
+        };
+
+        window.switchTab = (id) => {
+            console.log('Switch to:', id);
+        };
+        
+        const ASSETS = [
+            { id: 'pim', name: 'PIM Token', symbol: 'PIM', price: 0.12, color: 'text-orange-500' },
+            { id: 'bch', name: 'Bitcoin Cash', symbol: 'BCH', price: 7200, color: 'text-green-500' },
+            { id: 'usdt', name: 'Tether', symbol: 'USDT', price: 19.5, color: 'text-teal-400' }
+        ];
+
+        const ASSET_VISUALS = {
+            pim: { from: '#FC6D26', to: '#E24329', accent: 'text-orange-500' },
+            bch: { from: '#22c55e', to: '#16a34a', accent: 'text-green-500' },
+            usdt: { from: '#06b6d4', to: '#0ea5e9', accent: 'text-teal-400' }
+        };
+
+        let state = { 
+            zar: 10000, 
+            holdings: {}, 
+            user: null, 
+            pimWallets: [], 
+            cards: [], 
+            canisters: [],
+            shop: {
+                cart: {},
+                customer: { name: '', email: '', phone: '', city: '', address: '' },
+                orders: []
+            }
+        };
+
+        function loadLocalState() {
+            try {
+                const userId = state.user?.uid || 'guest';
+                const savedState = localStorage.getItem(STORAGE_KEY_PREFIX + userId);
+                if (savedState) {
+                    const parsed = JSON.parse(savedState);
+                    state.zar = parsed.zar || 10000;
+                    state.holdings = parsed.holdings || {};
+                    state.pimWallets = parsed.pimWallets || [];
+                    state.cards = parsed.cards || [];
+                    state.canisters = parsed.canisters || [];
+                    if (parsed.shop && typeof parsed.shop === 'object') {
+                        state.shop = {
+                            cart: parsed.shop.cart && typeof parsed.shop.cart === 'object' ? parsed.shop.cart : {},
+                            customer: {
+                                name: parsed.shop.customer?.name || '',
+                                email: parsed.shop.customer?.email || '',
+                                phone: parsed.shop.customer?.phone || '',
+                                city: parsed.shop.customer?.city || '',
+                                address: parsed.shop.customer?.address || ''
+                            },
+                            orders: Array.isArray(parsed.shop.orders) ? parsed.shop.orders : []
+                        };
+                    }
+                    console.log('Loaded state for:', userId);
+                }
+            } catch (e) {
+                console.warn('Load state error:', e);
+            }
+        }
+
+        function persistLocalState() {
+            try {
+                const userId = state.user?.uid || 'guest';
+                localStorage.setItem(STORAGE_KEY_PREFIX + userId, JSON.stringify({
+                    zar: state.zar,
+                    holdings: state.holdings,
+                    pimWallets: state.pimWallets,
+                    cards: state.cards,
+                    canisters: state.canisters,
+                    shop: state.shop,
+                    lastUpdated: new Date().toISOString()
+                }));
+                console.log('Persisted state for:', userId);
+            } catch (e) {
+                console.warn('Persist state error:', e);
+            }
+        }
+
+        // ----------------------------
+        // Pillow Shop (local-only demo)
+        // ----------------------------
+        const SHOP_PRODUCTS = [
+            {
+                id: 'starlite-cloud',
+                name: 'Starlite Cloud Pillow',
+                price: 249,
+                badge: 'Best Seller',
+                tone: 'orange',
+                desc: 'Ultra-soft microfibre feel with a crisp, photo-card vibe.'
+            },
+            {
+                id: 'nebula-cool-gel',
+                name: 'Nebula Cool-Gel Pillow',
+                price: 329,
+                badge: 'Cooling',
+                tone: 'cyan',
+                desc: 'Cool-touch surface for warmer nights and clean support.'
+            },
+            {
+                id: 'aurora-memory',
+                name: 'Aurora Memory Pillow',
+                price: 399,
+                badge: 'Premium',
+                tone: 'violet',
+                desc: 'Slow-rebound comfort for neck alignment and pressure relief.'
+            },
+            {
+                id: 'midnight-travel',
+                name: 'Midnight Travel Pillow',
+                price: 189,
+                badge: 'Compact',
+                tone: 'slate',
+                desc: 'Small, supportive, and easy to pack for commutes.'
+            },
+            {
+                id: 'sunrise-kids',
+                name: 'Sunrise Kids Pillow',
+                price: 149,
+                badge: 'Kids',
+                tone: 'green',
+                desc: 'Gentle height and softness designed for smaller sleepers.'
+            },
+            {
+                id: 'studio-firm',
+                name: 'Studio Firm Pillow',
+                price: 279,
+                badge: 'Firm',
+                tone: 'amber',
+                desc: 'Extra support for back sleepers and posture comfort.'
+            }
+        ];
+
+        function formatZar(amount) {
+            const n = Number(amount || 0);
+            return `R ${n.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+        }
+
+        function formatUnits(units) {
+            const n = Number(units || 0);
+            if (!isFinite(n)) return '0';
+            if (Math.abs(n) >= 1000) return n.toLocaleString(undefined, { maximumFractionDigits: 4 });
+            if (Math.abs(n) >= 1) return n.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 6 });
+            return n.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 8 });
+        }
+
+        function assetById(id) {
+            return ASSETS.find(a => a.id === id);
+        }
+
+        function holdingUnits(id) {
+            const v = state.holdings?.[id];
+            const n = Number(v || 0);
+            return isFinite(n) ? n : 0;
+        }
+
+        function ensureInvestState() {
+            if (!state.invest || typeof state.invest !== 'object') {
+                state.invest = { avgCost: {}, activity: [] };
+            }
+            if (!state.invest.avgCost || typeof state.invest.avgCost !== 'object') state.invest.avgCost = {};
+            if (!Array.isArray(state.invest.activity)) state.invest.activity = [];
+        }
+
+        function pushActivity(type, tokenId, detail) {
+            ensureInvestState();
+            const token = (tokenId || '').toUpperCase();
+            state.invest.activity = [
+                { id: 'TX-' + Math.random().toString(16).slice(2, 10).toUpperCase(), ts: new Date().toISOString(), type, token, detail },
+                ...(state.invest.activity || [])
+            ].slice(0, 20);
+        }
+
+        function portfolioTotals() {
+            const cash = Number(state.zar || 0);
+            let invested = 0;
+            for (const a of ASSETS) {
+                invested += holdingUnits(a.id) * Number(a.price || 0);
+            }
+            const total = cash + invested;
+            return { cash, invested, total };
+        }
+
+        function renderInvestmentDashboard() {
+            const holdingsEl = document.getElementById('invHoldings');
+            const totalEl = document.getElementById('invTotalValue');
+            const cashEl = document.getElementById('invCash');
+            const investedEl = document.getElementById('invInvested');
+            const activityEl = document.getElementById('invActivity');
+            if (!holdingsEl || !totalEl || !cashEl || !investedEl || !activityEl) return;
+
+            ensureInvestState();
+
+            const { cash, invested, total } = portfolioTotals();
+            totalEl.innerText = formatZar(total);
+            cashEl.innerText = formatZar(cash);
+            investedEl.innerText = formatZar(invested);
+
+            const cards = ASSETS.map(a => {
+                const u = holdingUnits(a.id);
+                const price = Number(a.price || 0);
+                const value = u * price;
+                const avg = Number(state.invest.avgCost?.[a.id] || 0);
+                const pnl = avg > 0 ? (price - avg) * u : 0;
+                const pnlColor = pnl >= 0 ? 'text-green-400' : 'text-red-400';
+                const vis = ASSET_VISUALS[a.id] || { from: '#FC6D26', to: '#E24329' };
+                const badgeTone = a.id === 'bch' ? 'bg-green-500/15 text-green-200 border-green-500/25'
+                    : a.id === 'usdt' ? 'bg-cyan-500/15 text-cyan-200 border-cyan-500/25'
+                    : 'bg-orange-500/15 text-orange-200 border-orange-500/25';
+
+                return `
+                    <div class="box-3d rounded-[1.75rem] p-5 sm:p-6 bg-[#0b0b10] border border-white/10 relative overflow-hidden">
+                        <div class="absolute -right-10 -top-10 w-32 h-32 rounded-full blur-[65px]" style="background: ${vis.from}22;"></div>
+                        <div class="relative">
+                            <div class="flex items-start justify-between gap-3">
+                                <div class="min-w-0">
+                                    <p class="text-[10px] font-black uppercase tracking-[0.35em] text-slate-500">${a.name}</p>
+                                    <div class="mt-1 flex items-center gap-2">
+                                        <span class="text-xl font-black text-white">${a.symbol}</span>
+                                        <span class="px-2 py-1 rounded-full border ${badgeTone} text-[10px] font-black uppercase tracking-widest">${formatZar(price)}</span>
+                                    </div>
+                                </div>
+                                <button onclick="window.invSelectToken('${a.id}')" class="h-10 px-3 rounded-2xl bg-white/5 border border-white/10 text-slate-200 text-[10px] font-black uppercase tracking-widest hover:text-white hover:border-orange-500/20 transition-colors">Trade</button>
+                            </div>
+
+                            <div class="mt-4 grid grid-cols-2 gap-3">
+                                <div class="p-4 rounded-2xl bg-white/5 border border-white/10">
+                                    <p class="text-[9px] font-black uppercase tracking-widest text-slate-500">Units</p>
+                                    <p class="mt-1 text-base font-black text-white tabular-nums">${formatUnits(u)}</p>
+                                </div>
+                                <div class="p-4 rounded-2xl bg-white/5 border border-white/10">
+                                    <p class="text-[9px] font-black uppercase tracking-widest text-slate-500">Value</p>
+                                    <p class="mt-1 text-base font-black text-white tabular-nums">${formatZar(value)}</p>
+                                </div>
+                            </div>
+
+                            <div class="mt-3 flex items-center justify-between">
+                                <p class="text-[10px] text-slate-500 font-mono">Avg cost: ${avg ? formatZar(avg) : '—'}</p>
+                                <p class="text-[10px] font-mono ${pnlColor}">P/L: ${avg ? formatZar(pnl) : '—'}</p>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            holdingsEl.innerHTML = cards;
+
+            const rows = (state.invest.activity || []).map(x => {
+                const t = new Date(x.ts);
+                const time = isFinite(t.getTime()) ? t.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '';
+                const tone = x.type === 'BUY' ? 'text-green-300' : x.type === 'SELL' ? 'text-red-300' : 'text-slate-300';
+                return `
+                    <div class="p-3 rounded-2xl bg-white/5 border border-white/10">
+                        <div class="flex items-center justify-between gap-3">
+                            <p class="text-[10px] font-black ${tone}">${x.type} ${x.token}</p>
+                            <p class="text-[10px] text-slate-600 font-mono">${time}</p>
+                        </div>
+                        <p class="mt-1 text-[10px] text-slate-400 font-mono">${x.detail || ''}</p>
+                    </div>
+                `;
+            }).join('');
+
+            activityEl.innerHTML = rows || `<div class="p-4 rounded-2xl bg-white/5 border border-white/10 text-[10px] text-slate-500 font-mono">No trades yet.</div>`;
+        }
+
+        function parseNumber(elId) {
+            const v = (document.getElementById(elId)?.value || '').toString().replace(/,/g, '.').trim();
+            const n = Number(v);
+            return isFinite(n) ? n : 0;
+        }
+
+        window.invSelectToken = (tokenId) => {
+            const sel = document.getElementById('invToken');
+            if (sel) sel.value = tokenId;
+        };
+
+        window.invQuickBuy = (pct) => {
+            const amount = Math.max(0, Number(state.zar || 0) * Number(pct || 0));
+            const el = document.getElementById('invBuyZar');
+            if (el) el.value = (Math.floor(amount * 100) / 100).toString();
+        };
+
+        window.invAddFunds = (zarAmount) => {
+            const amt = Math.max(0, Number(zarAmount || 0));
+            if (!amt) return;
+            state.zar = Number(state.zar || 0) + amt;
+            pushActivity('DEPOSIT', 'ZAR', `${formatZar(amt)} added`);
+            persistLocalState();
+            renderInvestmentDashboard();
+            renderPimPanel();
+            window.showToast(`✓ FUNDS ADDED: ${formatZar(amt)}`);
+        };
+
+        window.invBuy = () => {
+            ensureInvestState();
+            const tokenId = (document.getElementById('invToken')?.value || 'pim').trim();
+            const asset = assetById(tokenId);
+            if (!asset) return;
+            const amountZar = parseNumber('invBuyZar');
+            if (amountZar <= 0) return window.showToast('⚠ ENTER BUY AMOUNT');
+            if (amountZar > Number(state.zar || 0)) return window.showToast('⚠ INSUFFICIENT CASH');
+
+            const price = Number(asset.price || 0);
+            if (!price) return window.showToast('✗ PRICE UNAVAILABLE');
+
+            const units = amountZar / price;
+            const prevUnits = holdingUnits(tokenId);
+            const newUnits = prevUnits + units;
+
+            // Avg cost basis in ZAR/unit
+            const prevAvg = Number(state.invest.avgCost?.[tokenId] || 0);
+            const prevCost = prevAvg > 0 ? prevAvg * prevUnits : 0;
+            const nextAvg = newUnits > 0 ? (prevCost + amountZar) / newUnits : 0;
+            state.invest.avgCost[tokenId] = nextAvg;
+
+            state.zar = Number(state.zar || 0) - amountZar;
+            state.holdings[tokenId] = newUnits;
+
+            pushActivity('BUY', tokenId, `${formatZar(amountZar)} → ${formatUnits(units)} @ ${formatZar(price)}`);
+            persistLocalState();
+            renderInvestmentDashboard();
+            renderPimPanel();
+            window.showToast(`✓ BOUGHT ${asset.symbol}`);
+        };
+
+        window.invSell = () => {
+            ensureInvestState();
+            const tokenId = (document.getElementById('invToken')?.value || 'pim').trim();
+            const asset = assetById(tokenId);
+            if (!asset) return;
+            const unitsToSell = parseNumber('invSellUnits');
+            if (unitsToSell <= 0) return window.showToast('⚠ ENTER UNITS TO SELL');
+
+            const prevUnits = holdingUnits(tokenId);
+            if (unitsToSell > prevUnits) return window.showToast('⚠ INSUFFICIENT UNITS');
+
+            const price = Number(asset.price || 0);
+            if (!price) return window.showToast('✗ PRICE UNAVAILABLE');
+
+            const proceeds = unitsToSell * price;
+            const newUnits = prevUnits - unitsToSell;
+            state.holdings[tokenId] = newUnits;
+            state.zar = Number(state.zar || 0) + proceeds;
+
+            if (newUnits <= 0.00000001) {
+                state.holdings[tokenId] = 0;
+                state.invest.avgCost[tokenId] = 0;
+            }
+
+            pushActivity('SELL', tokenId, `${formatUnits(unitsToSell)} → ${formatZar(proceeds)} @ ${formatZar(price)}`);
+            persistLocalState();
+            renderInvestmentDashboard();
+            renderPimPanel();
+            window.showToast(`✓ SOLD ${asset.symbol}`);
+        };
+
+        function cartItemsArray() {
+            const entries = Object.entries(state.shop?.cart || {});
+            return entries
+                .map(([productId, item]) => {
+                    const product = SHOP_PRODUCTS.find(p => p.id === productId);
+                    if (!product) return null;
+                    const qty = Math.max(0, parseInt(item?.qty ?? 0, 10) || 0);
+                    return { product, qty };
+                })
+                .filter(Boolean)
+                .filter(x => x.qty > 0);
+        }
+
+        function cartTotals() {
+            const items = cartItemsArray();
+            const count = items.reduce((sum, x) => sum + x.qty, 0);
+            const subtotal = items.reduce((sum, x) => sum + x.qty * x.product.price, 0);
+            return { items, count, subtotal };
+        }
+
+        function ensureShopState() {
+            if (!state.shop || typeof state.shop !== 'object') {
+                state.shop = { cart: {}, customer: { name: '', email: '', phone: '', city: '', address: '' }, orders: [] };
+            }
+            if (!state.shop.cart || typeof state.shop.cart !== 'object') state.shop.cart = {};
+            if (!state.shop.customer || typeof state.shop.customer !== 'object') {
+                state.shop.customer = { name: '', email: '', phone: '', city: '', address: '' };
+            }
+            if (!Array.isArray(state.shop.orders)) state.shop.orders = [];
+        }
+
+        function toneStyles(tone) {
+            switch (tone) {
+                case 'cyan': return { glow: 'shadow-[0_20px_40px_rgba(14,165,233,0.18)]', badge: 'bg-cyan-500/15 text-cyan-200 border-cyan-500/25' };
+                case 'violet': return { glow: 'shadow-[0_20px_40px_rgba(168,85,247,0.18)]', badge: 'bg-violet-500/15 text-violet-200 border-violet-500/25' };
+                case 'green': return { glow: 'shadow-[0_20px_40px_rgba(34,197,94,0.18)]', badge: 'bg-green-500/15 text-green-200 border-green-500/25' };
+                case 'amber': return { glow: 'shadow-[0_20px_40px_rgba(245,158,11,0.18)]', badge: 'bg-amber-500/15 text-amber-200 border-amber-500/25' };
+                case 'slate': return { glow: 'shadow-[0_20px_40px_rgba(148,163,184,0.12)]', badge: 'bg-slate-500/10 text-slate-200 border-white/10' };
+                default: return { glow: 'shadow-[0_20px_40px_rgba(252,109,38,0.18)]', badge: 'bg-orange-500/15 text-orange-200 border-orange-500/25' };
+            }
+        }
+
+        function productThumbSvg(tone) {
+            const color = (() => {
+                switch (tone) {
+                    case 'cyan': return '#0ea5e9';
+                    case 'violet': return '#a855f7';
+                    case 'green': return '#22c55e';
+                    case 'amber': return '#f59e0b';
+                    case 'slate': return '#94a3b8';
+                    default: return '#FC6D26';
+                }
+            })();
+            return `
+                <svg viewBox="0 0 120 80" role="img" aria-label="Pillow" class="w-full h-full">
+                    <defs>
+                        <linearGradient id="pG" x1="0" y1="0" x2="1" y2="1">
+                            <stop offset="0" stop-color="${color}" stop-opacity="0.55"/>
+                            <stop offset="1" stop-color="#ffffff" stop-opacity="0.08"/>
+                        </linearGradient>
+                        <filter id="pS" x="-20%" y="-40%" width="140%" height="180%">
+                            <feGaussianBlur stdDeviation="6" result="blur"/>
+                            <feColorMatrix in="blur" type="matrix" values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 0.6 0"/>
+                            <feMerge><feMergeNode/><feMergeNode in="SourceGraphic"/></feMerge>
+                        </filter>
+                    </defs>
+                    <rect x="6" y="10" width="108" height="60" rx="22" fill="#0b0b10" stroke="rgba(255,255,255,0.12)"/>
+                    <rect x="10" y="14" width="100" height="52" rx="20" fill="url(#pG)" filter="url(#pS)"/>
+                    <path d="M22 40c8-14 22-22 38-22s30 8 38 22" fill="none" stroke="rgba(255,255,255,0.22)" stroke-width="3" stroke-linecap="round"/>
+                    <path d="M26 52c10 10 22 14 34 14s24-4 34-14" fill="none" stroke="rgba(255,255,255,0.14)" stroke-width="3" stroke-linecap="round"/>
+                </svg>
+            `;
+        }
+
+        function renderProducts() {
+            const container = document.getElementById('products-container');
+            if (!container) return;
+            ensureShopState();
+
+            container.innerHTML = SHOP_PRODUCTS.map(p => {
+                const t = toneStyles(p.tone);
+                return `
+                    <div class="box-3d rounded-[2rem] p-5 sm:p-6 bg-gradient-to-br from-[#171720] via-[#14141c] to-[#0f0f17] border border-white/10 hover:border-orange-500/25 transition-all ${t.glow}">
+                        <div class="flex items-start justify-between gap-3">
+                            <div class="min-w-0">
+                                <p class="text-sm sm:text-base font-black text-white tracking-tight truncate">${p.name}</p>
+                                <p class="mt-1 text-[11px] text-slate-400">${p.desc}</p>
+                            </div>
+                            <span class="px-2.5 py-1 rounded-full border text-[9px] font-black uppercase tracking-widest ${t.badge}">${p.badge}</span>
+                        </div>
+
+                        <div class="mt-4 w-full aspect-[3/2] rounded-2xl bg-black/30 border border-white/10 overflow-hidden relative">
+                            <div class="absolute inset-0 opacity-60" style="background: radial-gradient(600px 240px at 60% 25%, rgba(255,255,255,0.10), rgba(0,0,0,0) 55%);"></div>
+                            <div class="absolute inset-0 p-4">${productThumbSvg(p.tone)}</div>
+                        </div>
+
+                        <div class="mt-4 flex items-center justify-between">
+                            <div>
+                                <p class="text-[10px] font-black uppercase tracking-widest text-slate-500">Price</p>
+                                <p class="text-lg font-black text-white tabular-nums">${formatZar(p.price)}</p>
+                            </div>
+                            <button onclick="window.addToCart('${p.id}')" class="h-11 px-4 rounded-2xl bg-orange-500 text-white text-[10px] sm:text-[11px] font-black uppercase tracking-widest shadow-[0_10px_25px_rgba(252,109,38,0.25)] hover:bg-orange-400 transition-colors">Add to Cart</button>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function updateCartUI() {
+            ensureShopState();
+            const { items, count, subtotal } = cartTotals();
+
+            const countEl = document.getElementById('cartCount');
+            if (countEl) countEl.innerText = String(count);
+
+            const subtitleEl = document.getElementById('cartSubtitle');
+            if (subtitleEl) subtitleEl.innerText = `${count} item${count === 1 ? '' : 's'}`;
+
+            const subtotalEl = document.getElementById('cartSubtotal');
+            if (subtotalEl) subtotalEl.innerText = formatZar(subtotal);
+
+            const checkoutTotalEl = document.getElementById('checkoutTotal');
+            if (checkoutTotalEl) checkoutTotalEl.innerText = formatZar(subtotal);
+
+            const cartItemsEl = document.getElementById('cartItems');
+            if (cartItemsEl) {
+                if (items.length === 0) {
+                    cartItemsEl.innerHTML = `
+                        <div class="p-4 rounded-2xl bg-white/5 border border-white/10">
+                            <p class="text-sm font-black text-white">Your cart is empty</p>
+                            <p class="mt-1 text-[11px] text-slate-400">Add a pillow to simulate checkout.</p>
+                        </div>
+                    `;
+                } else {
+                    cartItemsEl.innerHTML = items.map(({ product, qty }) => {
+                        return `
+                            <div class="p-4 rounded-2xl bg-white/5 border border-white/10">
+                                <div class="flex items-start justify-between gap-3">
+                                    <div class="min-w-0">
+                                        <p class="text-sm font-black text-white truncate">${product.name}</p>
+                                        <p class="text-[11px] text-slate-400">${formatZar(product.price)} each</p>
+                                    </div>
+                                    <button class="w-10 h-10 rounded-2xl bg-[#16161d] border border-white/10 text-slate-300 hover:text-white" onclick="window.removeFromCart('${product.id}')" aria-label="Remove item">
+                                        <svg class="w-5 h-5 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12"/></svg>
+                                    </button>
+                                </div>
+                                <div class="mt-3 flex items-center justify-between">
+                                    <div class="flex items-center gap-2">
+                                        <button class="w-10 h-10 rounded-2xl bg-[#16161d] border border-white/10 text-slate-200 hover:text-white" onclick="window.setCartQty('${product.id}', ${qty - 1})" aria-label="Decrease quantity">-</button>
+                                        <div class="w-12 h-10 rounded-2xl bg-black/40 border border-white/10 grid place-items-center font-black text-white tabular-nums">${qty}</div>
+                                        <button class="w-10 h-10 rounded-2xl bg-[#16161d] border border-white/10 text-slate-200 hover:text-white" onclick="window.setCartQty('${product.id}', ${qty + 1})" aria-label="Increase quantity">+</button>
+                                    </div>
+                                    <p class="text-sm font-black text-white tabular-nums">${formatZar(qty * product.price)}</p>
+                                </div>
+                            </div>
+                        `;
+                    }).join('');
+                }
+            }
+        }
+
+        function initShopUI() {
+            renderProducts();
+            updateCartUI();
+        }
+
+        function renderPimPanel() {
+            const panel = document.getElementById('pimPanel');
+            if (!panel) return;
+            ensureShopState();
+
+            const userLabelEl = document.getElementById('pimPanelUser');
+            if (userLabelEl) {
+                const uname = state.user?.username || state.user?.name || 'guest';
+                userLabelEl.innerText = `@${uname}`;
+            }
+
+            const zarEl = document.getElementById('pimPanelZar');
+            if (zarEl) zarEl.innerText = formatZar(state.zar);
+
+            const pimBal = Number(state.holdings?.pim || 0);
+            const pimEl = document.getElementById('pimPanelPim');
+            if (pimEl) pimEl.innerText = pimBal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+            const countEl = document.getElementById('pimPanelWalletCount');
+            if (countEl) countEl.innerText = `${state.pimWallets?.length || 0} wallet IDs minted`;
+
+            const listEl = document.getElementById('pimPanelWalletList');
+            if (listEl) {
+                const ids = (state.pimWallets || []).slice(-12).reverse();
+                listEl.innerHTML = ids.length
+                    ? ids.map(id => `<div class="px-3 py-2 rounded-xl bg-white/5 border border-white/10 font-mono text-[10px] text-orange-200 break-all">${id}</div>`).join('')
+                    : '<div class="text-[10px] text-slate-400">No wallet IDs yet. Mint to create IDs.</div>';
+            }
+        }
+
+        window.togglePimPanel = (open) => {
+            ensureShopState();
+            const panel = document.getElementById('pimPanel');
+            if (!panel) return;
+            const shouldOpen = typeof open === 'boolean' ? open : panel.classList.contains('hidden');
+            panel.classList.toggle('hidden', !shouldOpen);
+            state.shop.ui = { ...(state.shop.ui || {}), pimPanelOpen: shouldOpen };
+            persistLocalState();
+            renderPimPanel();
+        };
+
+        window.togglePimWalletList = () => {
+            const listEl = document.getElementById('pimPanelWalletList');
+            if (!listEl) return;
+            listEl.classList.toggle('hidden');
+        };
+
+        window.addToCart = (productId) => {
+            ensureShopState();
+            const product = SHOP_PRODUCTS.find(p => p.id === productId);
+            if (!product) return window.showToast('⚠ Product not found');
+
+            const existingQty = parseInt(state.shop.cart[productId]?.qty ?? 0, 10) || 0;
+            state.shop.cart[productId] = { qty: existingQty + 1 };
+            persistLocalState();
+            updateCartUI();
+            window.showToast(`✓ ADDED: ${product.name.toUpperCase()}`);
+        };
+
+        window.setCartQty = (productId, qty) => {
+            ensureShopState();
+            const q = Math.max(0, parseInt(qty, 10) || 0);
+            if (q === 0) {
+                delete state.shop.cart[productId];
+            } else {
+                state.shop.cart[productId] = { qty: q };
+            }
+            persistLocalState();
+            updateCartUI();
+        };
+
+        window.removeFromCart = (productId) => {
+            ensureShopState();
+            delete state.shop.cart[productId];
+            persistLocalState();
+            updateCartUI();
+        };
+
+        window.clearCart = () => {
+            ensureShopState();
+            state.shop.cart = {};
+            persistLocalState();
+            updateCartUI();
+            window.showToast('✓ CART CLEARED');
+        };
+
+        window.openCart = () => {
+            const overlay = document.getElementById('cartOverlay');
+            if (!overlay) return;
+            overlay.classList.add('active');
+            overlay.setAttribute('aria-hidden', 'false');
+            updateCartUI();
+        };
+
+        window.closeCart = (evt) => {
+            if (evt && evt.target && evt.currentTarget && evt.target !== evt.currentTarget) return;
+            const overlay = document.getElementById('cartOverlay');
+            if (!overlay) return;
+            overlay.classList.remove('active');
+            overlay.setAttribute('aria-hidden', 'true');
+        };
+
+        window.openCheckout = () => {
+            ensureShopState();
+            const { count } = cartTotals();
+            if (count === 0) {
+                window.showToast('⚠ ADD ITEMS BEFORE CHECKOUT');
+                return;
+            }
+            const overlay = document.getElementById('checkoutOverlay');
+            if (!overlay) return;
+            overlay.classList.add('active');
+            overlay.setAttribute('aria-hidden', 'false');
+
+            const c = state.shop.customer || {};
+            const set = (id, val) => {
+                const el = document.getElementById(id);
+                if (el) el.value = val || '';
+            };
+            set('checkoutName', c.name);
+            set('checkoutEmail', c.email);
+            set('checkoutPhone', c.phone);
+            set('checkoutCity', c.city);
+            set('checkoutAddress', c.address);
+            updateCartUI();
+        };
+
+        window.closeCheckout = (evt) => {
+            if (evt && evt.target && evt.currentTarget && evt.target !== evt.currentTarget) return;
+            const overlay = document.getElementById('checkoutOverlay');
+            if (!overlay) return;
+            overlay.classList.remove('active');
+            overlay.setAttribute('aria-hidden', 'true');
+        };
+
+        window.submitOrder = () => {
+            ensureShopState();
+            const { items, count, subtotal } = cartTotals();
+            if (count === 0) return window.showToast('⚠ CART EMPTY');
+
+            const get = (id) => (document.getElementById(id)?.value || '').trim();
+            const customer = {
+                name: get('checkoutName'),
+                email: get('checkoutEmail'),
+                phone: get('checkoutPhone'),
+                city: get('checkoutCity'),
+                address: get('checkoutAddress')
+            };
+
+            if (!customer.name || !customer.email) {
+                window.showToast('⚠ NAME + EMAIL REQUIRED');
+                return;
+            }
+
+            state.shop.customer = customer;
+            const order = {
+                id: 'ORDER-' + Math.random().toString(16).slice(2, 10).toUpperCase(),
+                createdAt: new Date().toISOString(),
+                user: state.user ? { uid: state.user.uid, username: state.user.username || '', name: state.user.name || '' } : null,
+                items: items.map(x => ({ productId: x.product.id, name: x.product.name, price: x.product.price, qty: x.qty })),
+                total: subtotal,
+                customer
+            };
+
+            state.shop.orders = [order, ...(state.shop.orders || [])].slice(0, 25);
+            state.shop.cart = {};
+
+            persistLocalState();
+            updateCartUI();
+            window.closeCheckout();
+            window.closeCart();
+            window.showToast(`✓ ORDER PLACED: ${order.id}`);
+        };
+
+        function refreshUI() {
+            try { renderInvestmentDashboard(); } catch (_) {}
+            renderPimPanel();
+            // Restore PIM panel open state (per user)
+            try {
+                const panel = document.getElementById('pimPanel');
+                const open = !!state.shop?.ui?.pimPanelOpen;
+                if (panel) panel.classList.toggle('hidden', !open);
+            } catch (_) {}
+            // Keep legacy wallet UI from throwing if reintroduced later.
+            try { updateUI(); } catch (_) {}
+        }
+
+        window.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                window.closeCheckout();
+                window.closeCart();
+                window.togglePimPanel(false);
+            }
+        });
+
+        // GitLab OAuth PKCE
+        const GITLAB_SCOPES = ['read_user','profile','email'];
+
+        // Embedded GitLab settings (hidden from UI)
+        const GITLAB_BASE_URL = 'https://gitlab.com';
+        const GITLAB_OAUTH_APP_ID = '893bb861cac480d410524fc241382323f76b2a9eaaacbb613ec4820cc3c5fd27';
+
+        function getGitlabConfig() {
+            const cfg = window.__gitlab_config || {};
+            const baseUrl = (cfg.baseUrl || window.__gitlab_base_url || GITLAB_BASE_URL || '').toString().trim().replace(/\/+$/,'');
+            const clientId = (cfg.clientId || window.__gitlab_client_id || GITLAB_OAUTH_APP_ID || '').toString().trim();
+            const defaultSecret = (cfg.clientSecret || window.__gitlab_client_secret || '').toString().trim();
+            return { baseUrl, clientId, defaultSecret };
+        }
+
+        function randomString(len = 64) {
+            const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-._~';
+            let s = '';
+            const array = new Uint8Array(len);
+            crypto.getRandomValues(array);
+            for (let i = 0; i < len; i++) s += chars[array[i] % chars.length];
+            return s;
+        }
+
+        async function sha256(str) {
+            const enc = new TextEncoder();
+            const data = enc.encode(str);
+            const hash = await crypto.subtle.digest('SHA-256', data);
+            return new Uint8Array(hash);
+        }
+
+        function base64Url(bytes) {
+            const bin = String.fromCharCode(...bytes);
+            const b64 = btoa(bin).replace(/=/g,'').replace(/\+/g,'-').replace(/\//g,'_');
+            return b64;
+        }
+
+        async function createCodeChallenge(verifier) {
+            const hashBytes = await sha256(verifier);
+            return base64Url(hashBytes);
+        }
+
+        function getRedirectUri() {
+            return window.location.origin + window.location.pathname;
+        }
+
+        function transitionToDashboard() {
+            const authEl = document.getElementById('auth-screen');
+            const appEl = document.getElementById('app-content');
+            if (!authEl || !appEl) return;
+
+            // Guard against double-triggering
+            if (transitionToDashboard._inFlight) return;
+            transitionToDashboard._inFlight = true;
+
+            // Ensure the dashboard is visible before animating
+            appEl.classList.remove('hidden');
+
+            // Restart animations cleanly
+            authEl.classList.remove('auth-exit-zoom');
+            appEl.classList.remove('app-enter-zoom');
+
+            // Force style flush so re-adding classes reliably animates
+            void authEl.offsetWidth;
+            void appEl.offsetWidth;
+
+            authEl.classList.add('auth-exit-zoom');
+            appEl.classList.add('app-enter-zoom');
+
+            // Hide auth only after the visual exit completes
+            window.setTimeout(() => {
+                authEl.classList.add('hidden');
+                authEl.classList.remove('auth-exit-zoom');
+                appEl.classList.remove('app-enter-zoom');
+                transitionToDashboard._inFlight = false;
+            }, 540);
+        }
+
+        window.gitlabStartAuth = async () => {
+            const btn = document.getElementById('gitlab-connect');
+            const txt = document.getElementById('login-text');
+            
+            console.log('gitlabStartAuth called');
+            
+            try {
+                const clientSecretEl = document.getElementById('gitlab-client-secret');
+                const { baseUrl, clientId, defaultSecret } = getGitlabConfig();
+                const clientSecret = ((clientSecretEl?.value || '') || defaultSecret).trim();
+                
+                console.log('baseUrl:', baseUrl, 'clientId:', clientId);
+
+                if (!baseUrl || !clientId) {
+                    window.showToast('✗ MISSING GITLAB CONFIG (set in local.config.js)');
+                    return;
+                }
+
+                btn.disabled = true;
+                txt.innerText = 'CONNECTING...';
+
+                const stateStr = randomString(48);
+                const verifier = randomString(64);
+                const challenge = await createCodeChallenge(verifier);
+                const redirectUri = getRedirectUri();
+
+                console.log('redirectUri:', redirectUri);
+
+                sessionStorage.setItem('gitlab_oauth_state', stateStr);
+                sessionStorage.setItem('gitlab_code_verifier', verifier);
+                sessionStorage.setItem('gitlab_redirect_uri', redirectUri);
+                if (clientSecret) {
+                    sessionStorage.setItem('gitlab_client_secret', clientSecret);
+                } else {
+                    sessionStorage.removeItem('gitlab_client_secret');
+                }
+
+                const authorize = new URL(baseUrl + '/oauth/authorize');
+                authorize.searchParams.set('client_id', clientId);
+                authorize.searchParams.set('redirect_uri', redirectUri);
+                authorize.searchParams.set('response_type', 'code');
+                authorize.searchParams.set('state', stateStr);
+                authorize.searchParams.set('scope', GITLAB_SCOPES.join(' '));
+                authorize.searchParams.set('code_challenge', challenge);
+                authorize.searchParams.set('code_challenge_method', 'S256');
+
+                const authUrl = authorize.toString();
+                console.log('Redirecting to GitLab OAuth:', authUrl);
+                
+                // Use a small delay to ensure logs are flushed
+                setTimeout(() => {
+                    window.location.href = authUrl;
+                }, 100);
+            } catch (e) {
+                console.error('Auth start error:', e);
+                console.error('Error stack:', e.stack);
+                window.showToast('✗ AUTH ERROR: ' + e.message);
+                if (btn) btn.disabled = false;
+                if (txt) txt.innerText = 'LOGIN WITH GITLAB';
+            }
+        }
+
+        // Handle OAuth callback
+        async function gitlabHandleRedirect() {
+            const url = new URL(window.location.href);
+            const code = url.searchParams.get('code');
+            const returnedState = url.searchParams.get('state');
+            const oauthError = url.searchParams.get('error');
+            const oauthErrorDesc = url.searchParams.get('error_description');
+
+            if (oauthError) {
+                console.error('OAuth error:', oauthError, oauthErrorDesc || '');
+                if (window.showToast) {
+                    window.showToast('✗ AUTH ERROR: ' + (oauthErrorDesc || oauthError));
+                }
+                const cleanUrl = window.location.protocol + '//' + window.location.host + window.location.pathname;
+                window.history.replaceState({}, '', cleanUrl);
+                return;
+            }
+
+            if (!code) return;
+
+            console.log('GitLab OAuth callback detected');
+
+            try {
+                const savedState = sessionStorage.getItem('gitlab_oauth_state');
+                if (returnedState !== savedState) {
+                    throw new Error('State mismatch - security check failed');
+                }
+
+                const { baseUrl, clientId } = getGitlabConfig();
+                const clientSecret = sessionStorage.getItem('gitlab_client_secret');
+                const verifier = sessionStorage.getItem('gitlab_code_verifier');
+                const redirectUri = sessionStorage.getItem('gitlab_redirect_uri');
+
+                if (!baseUrl || !clientId) {
+                    throw new Error('Missing embedded GitLab OAuth configuration');
+                }
+                if (!verifier || !redirectUri) {
+                    throw new Error('Missing OAuth session data');
+                }
+
+                console.log('Exchanging code for token...');
+                async function exchangeToken(includeSecret) {
+                    const tokenPayload = new URLSearchParams({
+                        client_id: clientId,
+                        code,
+                        grant_type: 'authorization_code',
+                        redirect_uri: redirectUri,
+                        code_verifier: verifier
+                    });
+                    if (includeSecret && clientSecret) tokenPayload.set('client_secret', clientSecret);
+
+                    const tokenReq = await fetch(baseUrl + '/oauth/token', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                        body: tokenPayload
+                    });
+
+                    const text = await tokenReq.text();
+                    if (!tokenReq.ok) {
+                        console.error('Token exchange failed:', text);
+                        const hint = (text || '').slice(0, 220);
+                        throw new Error(`Token exchange failed (${tokenReq.status}): ${hint}`);
+                    }
+                    return JSON.parse(text);
+                }
+
+                let tokens;
+                try {
+                    // Try with secret if provided
+                    tokens = await exchangeToken(true);
+                } catch (e1) {
+                    // If a secret was supplied, retry once without it (public PKCE client)
+                    if (clientSecret) {
+                        console.warn('Retrying token exchange without secret...');
+                        tokens = await exchangeToken(false);
+                    } else {
+                        throw e1;
+                    }
+                }
+                sessionStorage.setItem('gitlab_tokens', JSON.stringify(tokens));
+                console.log('Token received');
+
+                console.log('Fetching user info...');
+                const userReq = await fetch(baseUrl + '/api/v4/user', {
+                    headers: { 'Authorization': `Bearer ${tokens.access_token}` }
+                });
+
+                if (!userReq.ok) {
+                    const errorText = await userReq.text();
+                    console.error('User info failed:', errorText);
+                    throw new Error(`User info failed: ${errorText.slice(0,180)}`);
+                }
+
+                const userObj = await userReq.json();
+                console.log('User info received:', userObj);
+
+                const user = {
+                    uid: `gitlab-${userObj.id}`,
+                    name: userObj.name || userObj.username || 'GitLab User',
+                    username: userObj.username || 'user',
+                    email: userObj.email || '',
+                    avatar_url: userObj.avatar_url || '',
+                    gitlab: true
+                };
+
+                state.user = user;
+                sessionStorage.setItem('gitlab_user', JSON.stringify(user));
+                
+                loadLocalState();
+
+                const authEl = document.getElementById('auth-screen');
+                const appEl = document.getElementById('app-content');
+                
+                if (authEl && appEl) {
+                        const userEl = document.getElementById('gitlabUser');
+                        if (userEl) userEl.innerText = `@${user.username}`;
+                    transitionToDashboard();
+                    
+                    // Use requestAnimationFrame to ensure render happens
+                    requestAnimationFrame(() => {
+                        console.log('Dashboard shown, updating UI...');
+                        refreshUI();
+                    });
+                }
+
+                if (window.showToast) {
+                    window.showToast(`✓ WELCOME ${user.name.toUpperCase()}`);
+                }
+
+                    // Clean URL by replacing to pathname only
+                    const cleanUrl = window.location.protocol + '//' + window.location.host + window.location.pathname;
+                    window.history.replaceState({}, '', cleanUrl);
+                
+                console.log('Login complete');
+            } catch (e) {
+                console.error('OAuth callback error:', e);
+                if (window.showToast) {
+                    window.showToast('✗ AUTH FAILED: ' + e.message);
+                }
+                
+                // Clean up URL even on error
+                const cleanUrl = window.location.protocol + '//' + window.location.host + window.location.pathname;
+                window.history.replaceState({}, '', cleanUrl);
+                
+                // Stay on auth screen but re-enable button to retry
+                const btn = document.getElementById('gitlab-connect');
+                const txt = document.getElementById('login-text');
+                if (btn) btn.disabled = false;
+                if (txt) txt.innerText = 'LOGIN WITH GITLAB';
+            }
+        }
+
+        // Run OAuth handler and check session after DOM ready
+        window.addEventListener('DOMContentLoaded', async () => {
+            // Authentication Key help
+            try {
+                const helpBtn = document.getElementById('authKeyHelp');
+                const helpText = document.getElementById('authKeyHelpText');
+                if (helpBtn && helpText) {
+                    helpBtn.addEventListener('click', () => {
+                        helpText.classList.toggle('hidden');
+                    });
+                }
+            } catch (_) {}
+
+            // Handle OAuth callback first
+            await gitlabHandleRedirect();
+            
+            // Check if already logged in (if no callback processed)
+            const tokens = sessionStorage.getItem('gitlab_tokens');
+            const userInfo = sessionStorage.getItem('gitlab_user');
+            
+            if (tokens && userInfo) {
+                try {
+                    state.user = JSON.parse(userInfo);
+                    loadLocalState();
+                    
+                    const authEl = document.getElementById('auth-screen');
+                    const appEl = document.getElementById('app-content');
+                    
+                    if (authEl && appEl) {
+                            const userEl = document.getElementById('gitlabUser');
+                            if (userEl) userEl.innerText = `@${state.user.username || 'user'}`;
+                        transitionToDashboard();
+                        
+                        // Use requestAnimationFrame for guaranteed render
+                        requestAnimationFrame(() => {
+                            console.log('Dashboard shown, updating UI from session restore...');
+                            refreshUI();
+                        });
+                    }
+                    console.log('Session restored for:', state.user.username);
+                } catch (e) {
+                    console.error('Error restoring session:', e);
+                }
+            } else {
+                console.log('No active session found, keeping auth screen visible');
+                const authEl = document.getElementById('auth-screen');
+                if (authEl) authEl.classList.remove('hidden');
+            }
+        });
+
+        // Update UI with current state
+        function updateUI() {
+            const container = document.getElementById('assets-container');
+            if (!container) return;
+            
+            let html = `
+                <div class="p-5 sm:p-6 rounded-2xl sm:rounded-3xl bg-[#16161d] border border-white/5 flex items-center justify-between box-3d group hover:border-orange-500/20 transition-all">
+                    <div class="flex items-center gap-4 sm:gap-5 flex-1 min-w-0">
+                        <div class="w-12 h-12 sm:w-14 sm:h-14 rounded-xl sm:rounded-2xl bg-gradient-to-br from-green-500/20 to-emerald-500/20 flex items-center justify-center text-green-500 font-black text-xs sm:text-sm border border-green-500/20 flex-shrink-0">ZAR</div>
+                        <div class="flex-1 min-w-0">
+                            <p class="text-xs sm:text-sm font-black text-white tracking-wide mb-1">South African Rand</p>
+                            <p class="text-[9px] sm:text-[10px] font-mono text-slate-600 font-bold">FIAT RESERVE</p>
+                        </div>
+                    </div>
+                    <div class="text-right flex-shrink-0">
+                        <p class="text-sm sm:text-base font-black text-white tabular-nums">R ${state.zar.toLocaleString(undefined, {minimumFractionDigits:2})}</p>
+                        <p class="text-[9px] sm:text-[10px] text-slate-600 font-bold tabular-nums">${state.zar.toLocaleString(undefined, {minimumFractionDigits:2})} ZAR</p>
+                    </div>
+                </div>
+            `;
+
+            let totalVal = state.zar;
+            ASSETS.forEach(a => {
+                const bal = state.holdings[a.id] || 0;
+                const val = bal * a.price;
+                totalVal += val;
+
+                const logoSvg = (() => {
+                    if (a.id === 'bch') {
+                        // Original, token-like mark (not an exact logo)
+                        return `
+                        <svg viewBox="0 0 100 100" aria-label="BCH" role="img">
+                            <defs>
+                                <linearGradient id="gBch" x1="0" y1="0" x2="1" y2="1">
+                                    <stop offset="0" stop-color="#22c55e"/>
+                                    <stop offset="1" stop-color="#16a34a"/>
+                                </linearGradient>
+                            </defs>
+                            <circle cx="50" cy="50" r="44" fill="url(#gBch)"/>
+                            <path d="M30 28h26c11 0 18 6 18 14 0 6-3 10-8 12 6 2 10 7 10 14 0 10-8 18-22 18H30V28zm12 12v10h12c5 0 8-2 8-5 0-3-3-5-8-5H42zm0 22v12h14c6 0 9-3 9-6 0-4-3-6-9-6H42z" fill="#ffffff" fill-opacity="0.92"/>
+                            <rect x="36" y="22" width="6" height="56" rx="3" fill="#ffffff" fill-opacity="0.55"/>
+                            <rect x="60" y="22" width="6" height="56" rx="3" fill="#ffffff" fill-opacity="0.55"/>
+                        </svg>`;
+                    }
+                    if (a.id === 'usdt') {
+                        return `
+                        <svg viewBox="0 0 100 100" aria-label="USDT" role="img">
+                            <defs>
+                                <linearGradient id="gUsdt" x1="0" y1="0" x2="1" y2="1">
+                                    <stop offset="0" stop-color="#14b8a6"/>
+                                    <stop offset="1" stop-color="#0ea5e9"/>
+                                </linearGradient>
+                            </defs>
+                            <circle cx="50" cy="50" r="44" fill="url(#gUsdt)"/>
+                            <path d="M26 33h48v10H56v8.5c13 1 22 4.6 22 9.2 0 4.8-12.5 8.7-28 8.7s-28-3.9-28-8.7c0-4.6 9-8.2 22-9.2V43H26V33zm24 26.5c-11.8 0-20.8 2.4-20.8 4.9 0 2.6 9 5 20.8 5s20.8-2.4 20.8-5c0-2.5-9-4.9-20.8-4.9z" fill="#ffffff" fill-opacity="0.92"/>
+                        </svg>`;
+                    }
+                    // PIM: stylized mainstream token-like mark
+                    return `
+                    <svg viewBox="0 0 100 100" aria-label="PIM" role="img">
+                        <defs>
+                            <linearGradient id="gPim" x1="0" y1="0" x2="1" y2="1">
+                                <stop offset="0" stop-color="#FC6D26"/>
+                                <stop offset="1" stop-color="#E24329"/>
+                            </linearGradient>
+                        </defs>
+                        <circle cx="50" cy="50" r="44" fill="url(#gPim)"/>
+                        <path d="M28 28h26c10 0 17 6 17 15 0 10-7 16-17 16H40v13H28V28zm12 10v11h12c5 0 8-2.3 8-5.6 0-3.3-3-5.4-8-5.4H40z" fill="#ffffff" fill-opacity="0.92"/>
+                        <path d="M62 72V28h10v44H62z" fill="#ffffff" fill-opacity="0.55"/>
+                        <path d="M22 78c7 5 16 8 28 8s21-3 28-8" fill="none" stroke="#ffffff" stroke-opacity="0.25" stroke-width="4" stroke-linecap="round"/>
+                    </svg>`;
+                })();
+                
+                html += `
+                <div class="p-5 sm:p-6 rounded-2xl sm:rounded-3xl bg-gradient-to-br from-[#171720] via-[#15151d] to-[#0f0f17] border border-white/5 flex items-center justify-between box-3d group hover:border-orange-500/25 transition-all">
+                    <div class="flex items-center gap-4 sm:gap-5 flex-1 min-w-0">
+                        <div class="relative flex-shrink-0 asset-logo asset-logo--${a.id}">
+                            ${logoSvg}
+                        </div>
+                        <div class="flex-1 min-w-0">
+                            <p class="text-xs sm:text-sm font-black text-white tracking-wide mb-1">${a.name}</p>
+                            <p class="text-[9px] sm:text-[10px] font-mono text-slate-600 font-bold uppercase tracking-widest">${a.symbol} • R${a.price.toLocaleString(undefined, {minimumFractionDigits:2})}</p>
+                        </div>
+                    </div>
+                    <div class="text-right flex-shrink-0">
+                        <p class="text-sm sm:text-base font-black text-white tabular-nums">${bal.toLocaleString(undefined, {minimumFractionDigits:2})} ${a.symbol}</p>
+                        <p class="text-[9px] sm:text-[10px] text-slate-500 font-bold tabular-nums">R ${val.toLocaleString(undefined, {minimumFractionDigits:2})}</p>
+                    </div>
+                </div>`;
+            });
+
+            // PIM Wallet IDs section
+            const walletCount = state.pimWallets.length;
+            const walletList = state.pimWallets.slice(-6).reverse().map(id => `
+                <div class="px-3 py-2 rounded-xl bg-white/5 border border-white/10 font-mono text-[10px] sm:text-[11px] text-orange-200 break-all">${id}</div>
+            `).join('');
+
+            html += `
+            <div class="p-5 sm:p-6 rounded-2xl sm:rounded-3xl bg-gradient-to-br from-[#20161a] to-[#0f0a0c] border border-orange-500/20 box-3d">
+                <div class="flex items-center justify-between mb-4">
+                    <div>
+                        <p class="text-[10px] sm:text-[11px] font-black text-orange-400 uppercase tracking-[0.25em]">PIM On-Chain Wallets</p>
+                        <p class="text-xs sm:text-sm text-white font-black">${walletCount} wallet IDs minted</p>
+                    </div>
+                    <button onclick="window.mintPIM()" class="px-3 sm:px-4 py-2 rounded-xl bg-orange-500 text-white text-[10px] sm:text-[11px] font-black uppercase tracking-widest shadow-[0_10px_25px_rgba(252,109,38,0.25)] hover:bg-orange-400 transition-colors">Mint PIM</button>
+                </div>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3">
+                    ${walletList || '<div class="text-[10px] sm:text-[11px] text-slate-500">No wallets yet. Mint to create PIM IDs.</div>'}
+                </div>
+                <p class="mt-3 text-[9px] sm:text-[10px] text-orange-200">Rate: 1 PIM = R2 • Each PIM mints a unique wallet ID.</p>
+            </div>`;
+
+            container.innerHTML = html;
+            const netEl = document.getElementById('totalNetValue');
+            if (netEl) netEl.innerText = `R ${totalVal.toLocaleString(undefined, {minimumFractionDigits:2})}`;
+        }
+
+        // Generate wallet ID
+        function generateWalletId() {
+            if (crypto.randomUUID) return `PIM-${crypto.randomUUID().replace(/-/g,'').slice(0,18)}`;
+            return 'PIM-' + Math.random().toString(16).slice(2,10) + Math.random().toString(16).slice(2,10);
+        }
+
+        // Mint PIM tokens
+        window.mintPIM = async () => {
+            const input = prompt('💎 How many PIM tokens to mint?\n\nRate: 1 PIM = R2\nYour Balance: R' + state.zar.toFixed(2));
+            const qty = parseInt(input, 10);
+            if (!qty || qty <= 0) return window.showToast('⚠ Enter valid quantity');
+            const cost = qty * 2;
+
+            if (state.zar < cost) return window.showToast('✗ INSUFFICIENT ZAR');
+
+            const newWallets = Array.from({length: qty}, () => generateWalletId());
+            state.pimWallets = [...state.pimWallets, ...newWallets];
+            
+            // Deduct ZAR and add PIM holdings
+            state.zar -= cost;
+            state.holdings.pim = (state.holdings.pim || 0) + qty;
+            
+            persistLocalState();
+            updateUI();
+            renderPimPanel();
+            window.showToast(`✓ MINTED ${qty} PIM @ R${cost}`);
+        };
+
+        // Auto-save state every 5s
+        setInterval(() => {
+            if (state.user) persistLocalState();
+        }, 5000);
+
+        // Render shop for guests too (auth gate hides app-content)
+        window.addEventListener('DOMContentLoaded', () => {
+            try { initShopUI(); } catch (_) {}
+        });
+
+            // Handle logout
+            window.handleLogout = () => {
+                sessionStorage.clear();
+                localStorage.removeItem('pim_vault_state');
+                state.user = null;
+                state.zar = 10000;
+                state.holdings = { pim: 0, bch: 7200, usdt: 19.5 };
+                state.pimWallets = [];
+                state.cards = [];
+                state.canisters = [];
+                state.shop = { cart: {}, customer: { name: '', email: '', phone: '', city: '', address: '' }, orders: [] };
+                window.closeCheckout();
+                window.closeCart();
+                window.togglePimPanel(false);
+                refreshUI();
+            
+                const authEl = document.getElementById('auth-screen');
+                const appEl = document.getElementById('app-content');
+                if (authEl) authEl.classList.remove('hidden');
+                if (appEl) appEl.classList.add('hidden');
+            
+                window.showToast('✓ LOGGED OUT');
+            };
+    </script>
+</body>
+</html>

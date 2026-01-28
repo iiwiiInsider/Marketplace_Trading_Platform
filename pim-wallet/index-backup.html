@@ -1,0 +1,1197 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>PIM Secure Wallet</title>
+    <!-- Tailwind for rapid UI development -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Premium Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+    <!-- QR Code Library for Receive functionality -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    
+    <style>
+        :root {
+            --brand-orange: #FC6D26;
+            --brand-dark-orange: #E24329;
+            --bg-dark: #0a0a0f;
+            --surface-3d: #16161e;
+        }
+        
+        body { 
+            font-family: 'Plus Jakarta Sans', sans-serif; 
+            background: var(--bg-dark); 
+            color: #f8fafc; 
+            overflow: hidden;
+            perspective: 1200px;
+            height: 100vh;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        .nav-band-top {
+            background: linear-gradient(180deg, var(--brand-orange) 0%, rgba(252, 109, 38, 0.65) 40%, rgba(10,10,15,0) 100%);
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+        }
+
+        .nav-band-bottom {
+            background: linear-gradient(0deg, var(--brand-orange) 0%, rgba(252, 109, 38, 0.65) 40%, rgba(10,10,15,0) 100%);
+            border-top: 1px solid rgba(255,255,255,0.05);
+        }
+
+        /* Responsive 3D Button Style */
+        .box-3d {
+            background: var(--surface-3d);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-bottom: 4px solid rgba(0, 0, 0, 0.4);
+            border-right: 2px solid rgba(0, 0, 0, 0.2);
+            box-shadow: 0 10px 30px -10px rgba(0,0,0,0.7);
+            transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+            transform-style: preserve-3d;
+            cursor: pointer;
+            user-select: none;
+        }
+
+        /* Haptic feedback simulation */
+        .box-3d:active:not(:disabled) {
+            transform: translateY(2px) scale(0.97);
+            border-bottom-width: 1px;
+            box-shadow: 0 4px 10px -5px rgba(0,0,0,0.5);
+        }
+
+        /* Hover states for desktop */
+        @media (hover: hover) {
+            .box-3d:hover {
+                border-color: rgba(252, 109, 38, 0.4);
+                background: #1c1c26;
+            }
+        }
+
+        .scene {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            transform: rotateX(1deg); /* Subtle depth tilt */
+        }
+
+        .brand-gradient {
+            background: linear-gradient(135deg, var(--brand-orange), var(--brand-dark-orange));
+        }
+
+        .custom-scrollbar::-webkit-scrollbar { width: 0px; }
+
+        .modal-overlay { 
+            background: rgba(5, 5, 8, 0.9); 
+            display: none; 
+            position: fixed; 
+            inset: 0; 
+            z-index: 300; 
+            align-items: center; 
+            justify-content: center; 
+            backdrop-filter: blur(12px); 
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+        .modal-overlay.active { display: flex; opacity: 1; }
+
+        .toast { 
+            position: fixed; 
+            top: 24px; 
+            left: 50%; 
+            transform: translateX(-50%) translateY(-20px); 
+            background: #1e1e26; 
+            color: white; 
+            padding: 12px 24px; 
+            border-radius: 16px; 
+            z-index: 500; 
+            font-size: 11px; 
+            font-weight: 700;
+            border: 1px solid rgba(255,255,255,0.1);
+            opacity: 0;
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            pointer-events: none;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.4);
+        }
+        .toast.active { transform: translateX(-50%) translateY(0); opacity: 1; }
+
+        .option-btn { 
+            border: 1px solid rgba(255,255,255,0.05); 
+            transition: all 0.2s; 
+            font-weight: 800; 
+            color: #64748b; 
+            font-size: 10px; 
+            letter-spacing: 0.05em;
+        }
+        .option-btn.active { 
+            border-color: var(--brand-orange); 
+            background: rgba(252, 109, 38, 0.15); 
+            color: var(--brand-orange); 
+            box-shadow: inset 0 0 10px rgba(252, 109, 38, 0.1);
+        }
+
+        /* Payment Gateway Scan Animation */
+        @keyframes scan {
+            0% { transform: translateY(-120%); opacity: 0; }
+            50% { opacity: 1; }
+            100% { transform: translateY(120%); opacity: 0; }
+        }
+        .scan-line {
+            width: 100%;
+            height: 3px;
+            background: var(--brand-orange);
+            box-shadow: 0 0 20px var(--brand-orange), 0 0 40px var(--brand-orange);
+            position: absolute;
+            animation: scan 1.5s infinite ease-in-out;
+        }
+
+        /* Login Screen Animations */
+        @keyframes float {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-20px); }
+        }
+        @keyframes pulse-glow {
+            0%, 100% { opacity: 0.5; transform: scale(1); }
+            50% { opacity: 1; transform: scale(1.05); }
+        }
+        @keyframes slide-up {
+            from { opacity: 0; transform: translateY(30px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .float-anim { animation: float 3s ease-in-out infinite; }
+        .pulse-glow { animation: pulse-glow 2s ease-in-out infinite; }
+        .slide-up { animation: slide-up 0.6s ease-out forwards; }
+        .slide-up-delay-1 { animation: slide-up 0.6s ease-out 0.15s forwards; opacity: 0; }
+        .slide-up-delay-2 { animation: slide-up 0.6s ease-out 0.3s forwards; opacity: 0; }
+        .slide-up-delay-3 { animation: slide-up 0.6s ease-out 0.45s forwards; opacity: 0; }
+    </style>
+</head>
+<body class="flex flex-col">
+
+    <!-- Top Navigation -->
+    <nav class="nav-band-top w-full z-[150] shadow-[0_10px_30px_rgba(252,109,38,0.15)]">
+        <div class="max-w-6xl mx-auto px-4 sm:px-6 py-3 sm:py-4 flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <div class="w-8 h-8 sm:w-10 sm:h-10 rounded-xl brand-gradient flex items-center justify-center box-3d text-white">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 7c0-1.657 3.582-3 8-3s8 1.343 8 3-3.582 3-8 3-8-1.343-8-3Z"/>
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 7v4c0 1.657 3.582 3 8 3s8-1.343 8-3V7"/>
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 11v4c0 1.657 3.582 3 8 3s8-1.343 8-3v-4"/>
+                    </svg>
+                </div>
+                <div class="leading-tight">
+                    <p class="text-[10px] sm:text-[11px] font-black text-white tracking-wide">PIM Vault</p>
+                    <p class="text-[9px] text-slate-200/80">Investment Loop Dashboard</p>
+                </div>
+            </div>
+            <div class="flex items-center gap-4 text-[10px] sm:text-[11px] font-black uppercase tracking-widest text-white">
+                <button onclick="window.switchTab('home')" class="hover:text-orange-200 transition-colors">Home</button>
+                <button onclick="window.switchTab('cards')" class="hover:text-orange-200 transition-colors hidden sm:inline">Cards</button>
+                <button onclick="window.switchTab('canisters')" class="hover:text-orange-200 transition-colors hidden sm:inline">Nodes</button>
+                <a href="mailto:contact@pim-vault.local" class="hover:text-orange-200 transition-colors">Contact</a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Global Notifications -->
+    <div id="toast" class="toast">
+        <span id="toast-msg">System Notification</span>
+    </div>
+
+    <!-- AUTH SCREEN -->
+    <div id="auth-screen" class="fixed inset-0 z-[200] bg-[#07070a] flex items-center justify-center p-4 sm:p-6 lg:p-8 overflow-y-auto">
+        <div class="w-full max-w-6xl grid grid-cols-1 lg:grid-cols-2 gap-6 sm:gap-8 lg:gap-12 items-center my-auto">
+            
+            <!-- Left: Login Form -->
+            <div class="w-full max-w-md mx-auto slide-up order-2 lg:order-1">
+                <div class="w-16 h-16 sm:w-20 sm:h-20 lg:w-24 lg:h-24 brand-gradient rounded-[1.5rem] sm:rounded-[2rem] flex items-center justify-center mx-auto mb-6 sm:mb-8 lg:mb-10 shadow-[0_30px_60px_rgba(252,109,38,0.25)] box-3d float-anim">
+                    <svg class="w-9 h-9 sm:w-10 sm:h-10 lg:w-12 lg:h-12 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 7c0-1.657 3.582-3 8-3s8 1.343 8 3-3.582 3-8 3-8-1.343-8-3Z"/>
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 7v4c0 1.657 3.582 3 8 3s8-1.343 8-3V7"/>
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 11v4c0 1.657 3.582 3 8 3s8-1.343 8-3v-4"/>
+                    </svg>
+                </div>
+                <h1 class="text-3xl sm:text-4xl lg:text-5xl font-extrabold text-white mb-2 tracking-tight text-center">PIM <span class="text-orange-500">VAULT</span></h1>
+                <p class="text-slate-500 text-[9px] sm:text-[10px] font-bold uppercase tracking-[0.3em] sm:tracking-[0.5em] mb-6 sm:mb-8 lg:mb-10 text-center">Secure Asset Node</p>
+                
+                <!-- GitLab OAuth Configuration -->
+                <div class="space-y-3 sm:space-y-4 mb-6 sm:mb-8">
+                    <div>
+                        <label class="text-[8px] sm:text-[9px] font-black text-slate-500 uppercase ml-2 mb-2 block tracking-widest">GitLab Instance</label>
+                        <input id="gitlab-base-url" class="w-full bg-black/40 border border-white/10 rounded-xl sm:rounded-2xl p-3 sm:p-4 text-[11px] sm:text-[12px] text-white outline-none focus:border-orange-500/50 transition-all" placeholder="https://gitlab.com" value="https://gitlab.com" />
+                    </div>
+                    <div>
+                        <label class="text-[8px] sm:text-[9px] font-black text-slate-500 uppercase ml-2 mb-2 block tracking-widest">OAuth Application ID</label>
+                        <input id="gitlab-client-id" class="w-full bg-black/40 border border-white/10 rounded-xl sm:rounded-2xl p-3 sm:p-4 text-[11px] sm:text-[12px] font-mono text-orange-400 outline-none focus:border-orange-500/50 transition-all" placeholder="Paste your Application ID" />
+                    </div>
+                </div>
+
+                <button id="gitlab-connect" onclick="window.gitlabStartAuth()" class="w-full h-14 sm:h-16 box-3d rounded-xl sm:rounded-2xl flex items-center justify-center gap-2 sm:gap-3 text-white text-xs sm:text-sm font-black bg-gradient-to-r from-[#FC6D26] to-[#E24329] active:scale-95 shadow-[0_10px_30px_rgba(252,109,38,0.3)] transition-transform">
+                    <svg class="w-4 h-4 sm:w-5 sm:h-5 text-white" fill="currentColor" viewBox="0 0 24 24">
+                        <path d="M23.955 13.587l-1.342-4.135L19.722 2.38a.62.62 0 00-1.173 0l-2.89 7.072H8.341L5.45 2.38a.62.62 0 00-1.173 0L1.387 9.452.045 13.587a1.24 1.24 0 00.449 1.383L12 22.54l11.506-7.57a1.24 1.24 0 00.449-1.383z"/>
+                    </svg>
+                    <span id="login-text">LOGIN WITH GITLAB</span>
+                </button>
+                
+                <p class="mt-6 sm:mt-8 text-[8px] sm:text-[9px] text-slate-600 font-mono tracking-widest uppercase text-center">PKCE Authentication • No Secrets Required</p>
+            </div>
+
+            <!-- Right: Animated Info Panel -->
+            <div class="w-full space-y-4 sm:space-y-6 lg:space-y-8 order-1 lg:order-2">
+                <div class="slide-up-delay-1">
+                    <div class="p-6 sm:p-8 rounded-2xl sm:rounded-[2.5rem] bg-gradient-to-br from-[#1a1a24] to-[#0a0a0f] border border-orange-500/10 box-3d relative overflow-hidden">
+                        <div class="absolute -right-10 -top-10 w-32 h-32 sm:w-40 sm:h-40 bg-orange-500/10 blur-[60px] rounded-full pulse-glow"></div>
+                        <div class="relative">
+                            <div class="w-12 h-12 sm:w-14 sm:h-14 rounded-xl sm:rounded-2xl bg-orange-500/20 flex items-center justify-center mb-4 sm:mb-6 box-3d">
+                                <svg class="w-6 h-6 sm:w-7 sm:h-7 text-orange-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/></svg>
+                            </div>
+                            <h3 class="text-lg sm:text-xl font-black text-white mb-2 sm:mb-3 tracking-tight">Smart Investment Loop</h3>
+                            <p class="text-xs sm:text-sm text-slate-400 leading-relaxed">Automatically track, analyze, and optimize your cryptocurrency portfolio with AI-powered insights and real-time market data.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="slide-up-delay-2">
+                    <div class="p-6 sm:p-8 rounded-2xl sm:rounded-[2.5rem] bg-[#16161d] border border-white/5 box-3d">
+                        <div class="flex items-center gap-3 sm:gap-4 mb-4 sm:mb-6">
+                            <div class="w-10 h-10 sm:w-12 sm:h-12 rounded-lg sm:rounded-xl bg-green-500/20 flex items-center justify-center box-3d flex-shrink-0">
+                                <svg class="w-5 h-5 sm:w-6 sm:h-6 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
+                            </div>
+                            <div class="flex-1 min-w-0">
+                                <p class="text-[10px] sm:text-xs font-black text-slate-500 uppercase tracking-wider mb-1">Secure Protocol</p>
+                                <p class="text-xs sm:text-sm font-bold text-white truncate">End-to-end encrypted storage</p>
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-3 sm:gap-4 mb-4 sm:mb-6">
+                            <div class="w-10 h-10 sm:w-12 sm:h-12 rounded-lg sm:rounded-xl bg-blue-500/20 flex items-center justify-center box-3d flex-shrink-0">
+                                <svg class="w-5 h-5 sm:w-6 sm:h-6 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+                            </div>
+                            <div class="flex-1 min-w-0">
+                                <p class="text-[10px] sm:text-xs font-black text-slate-500 uppercase tracking-wider mb-1">AI Analysis</p>
+                                <p class="text-xs sm:text-sm font-bold text-white truncate">Predictive market intelligence</p>
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-3 sm:gap-4">
+                            <div class="w-10 h-10 sm:w-12 sm:h-12 rounded-lg sm:rounded-xl bg-purple-500/20 flex items-center justify-center box-3d flex-shrink-0">
+                                <svg class="w-5 h-5 sm:w-6 sm:h-6 text-purple-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                            </div>
+                            <div class="flex-1 min-w-0">
+                                <p class="text-[10px] sm:text-xs font-black text-slate-500 uppercase tracking-wider mb-1">Multi-Asset</p>
+                                <p class="text-xs sm:text-sm font-bold text-white truncate">Crypto, fiat & virtual cards</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="slide-up-delay-3">
+                    <div class="p-4 sm:p-6 rounded-xl sm:rounded-2xl bg-black/30 border border-white/5 flex items-center gap-3 sm:gap-4">
+                        <div class="flex -space-x-2 sm:-space-x-3 flex-shrink-0">
+                            <div class="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-orange-500/30 border-2 border-[#07070a] flex items-center justify-center text-orange-500 font-black text-[10px] sm:text-xs">P</div>
+                            <div class="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-green-500/30 border-2 border-[#07070a] flex items-center justify-center text-green-500 font-black text-[10px] sm:text-xs">B</div>
+                            <div class="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-blue-500/30 border-2 border-[#07070a] flex items-center justify-center text-blue-500 font-black text-[10px] sm:text-xs">U</div>
+                        </div>
+                        <div class="flex-1 min-w-0">
+                            <p class="text-[10px] sm:text-xs text-slate-500 font-bold mb-1">Powered by GitLab integration</p>
+                            <p class="text-[9px] sm:text-[10px] text-slate-700 font-mono truncate">Connect any GitLab instance</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- MAIN APPLICATION SCENE -->
+    <div id="app-content" class="scene hidden opacity-0 transition-all duration-1000">
+        
+        <header class="px-4 sm:px-6 pt-8 sm:pt-12 pb-4 sm:pb-6 flex justify-between items-center">
+            <div class="flex items-center gap-3 sm:gap-4">
+                <div class="w-10 h-10 sm:w-12 sm:h-12 rounded-xl sm:rounded-2xl brand-gradient flex items-center justify-center box-3d shadow-lg shadow-orange-500/20 text-white">
+                    <svg class="w-6 h-6 sm:w-7 sm:h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M4 7c0-1.657 3.582-3 8-3s8 1.343 8 3-3.582 3-8 3-8-1.343-8-3Z"/>
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M4 7v4c0 1.657 3.582 3 8 3s8-1.343 8-3V7"/>
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M4 11v4c0 1.657 3.582 3 8 3s8-1.343 8-3v-4"/>
+                    </svg>
+                </div>
+                <div>
+                    <p class="text-[8px] sm:text-[9px] font-black text-slate-500 uppercase tracking-widest">Operator Node</p>
+                    <p id="userDisplayId" class="text-[10px] sm:text-[11px] font-mono text-slate-300 font-bold tracking-tight">Initializing...</p>
+                    <p id="gitlabUser" class="text-[8px] sm:text-[9px] font-mono text-orange-500 font-bold tracking-tight"></p>
+                </div>
+            </div>
+            <button onclick="window.handleLogout()" class="w-9 h-9 sm:w-10 sm:h-10 rounded-xl sm:rounded-2xl box-3d flex items-center justify-center text-slate-400 bg-[#16161d] hover:text-white transition-colors">
+                <svg class="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/></svg>
+            </button>
+        </header>
+
+        <main class="flex-1 px-4 sm:px-6 pb-20 sm:pb-28 overflow-y-auto custom-scrollbar">
+            
+            <!-- HOME VIEW -->
+            <section id="view-home" class="space-y-6 sm:space-y-8 pt-4">
+                
+                <!-- Total Balance Card -->
+                <div class="box-3d rounded-[2rem] sm:rounded-[2.5rem] p-6 sm:p-8 bg-gradient-to-br from-[#1a1a24] to-[#0a0a0f] relative overflow-hidden border-orange-500/10">
+                    <div class="absolute -right-10 -top-10 w-32 h-32 sm:w-40 sm:h-40 bg-orange-500/10 blur-[60px] rounded-full"></div>
+                    <div class="relative">
+                        <p class="text-[9px] sm:text-[10px] font-black text-orange-500 uppercase tracking-[0.3em] mb-2">Total Portfolio Value</p>
+                        <h2 id="totalNetValue" class="text-3xl sm:text-4xl lg:text-5xl font-black text-white tracking-tighter mb-6 sm:mb-8 tabular-nums">R 0,00</h2>
+                        <div class="flex flex-wrap items-center gap-3 sm:gap-4">
+                            <div class="flex items-center gap-2 text-[9px] sm:text-[10px] text-slate-500 font-mono font-bold">
+                                <div class="w-2 h-2 rounded-full bg-green-500 animate-pulse shadow-[0_0_10px_#22c55e]"></div>
+                                <span class="tracking-widest">LIVE</span>
+                            </div>
+                            <div class="px-3 py-1.5 sm:px-4 sm:py-2 rounded-full bg-green-500/10 border border-green-500/20">
+                                <span class="text-[9px] sm:text-[10px] font-black text-green-500 tracking-wider">+12.4% 24H</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Quick Actions Grid -->
+                <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
+                    <button onclick="window.openDepositModal()" class="box-3d aspect-square rounded-2xl sm:rounded-[1.5rem] flex flex-col items-center justify-center gap-2 sm:gap-3 bg-[#16161d] hover:bg-[#1c1c26] transition-all group">
+                        <div class="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-green-500/20 flex items-center justify-center group-hover:scale-110 transition-transform">
+                            <svg class="w-5 h-5 sm:w-6 sm:h-6 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"/></svg>
+                        </div>
+                        <span class="text-[9px] sm:text-[10px] font-black text-slate-400 uppercase tracking-tighter">Deposit</span>
+                    </button>
+                    <button onclick="window.openTransferModal('send')" class="box-3d aspect-square rounded-2xl sm:rounded-[1.5rem] flex flex-col items-center justify-center gap-2 sm:gap-3 bg-[#16161d] hover:bg-[#1c1c26] transition-all group">
+                        <div class="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-orange-500/20 flex items-center justify-center group-hover:scale-110 transition-transform">
+                            <svg class="w-5 h-5 sm:w-6 sm:h-6 text-orange-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 10l7-7m0 0l7 7m-7-7v18"/></svg>
+                        </div>
+                        <span class="text-[9px] sm:text-[10px] font-black text-slate-400 uppercase tracking-tighter">Send</span>
+                    </button>
+                    <button onclick="window.openTransferModal('receive')" class="box-3d aspect-square rounded-2xl sm:rounded-[1.5rem] flex flex-col items-center justify-center gap-2 sm:gap-3 bg-[#16161d] hover:bg-[#1c1c26] transition-all group">
+                        <div class="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-blue-500/20 flex items-center justify-center group-hover:scale-110 transition-transform">
+                            <svg class="w-5 h-5 sm:w-6 sm:h-6 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 14l-7 7m0 0l-7-7m7 7V3"/></svg>
+                        </div>
+                        <span class="text-[9px] sm:text-[10px] font-black text-slate-400 uppercase tracking-tighter">Receive</span>
+                    </button>
+                    <button onclick="window.showToast('AI Analysis coming soon...')" class="box-3d aspect-square rounded-2xl sm:rounded-[1.5rem] flex flex-col items-center justify-center gap-2 sm:gap-3 bg-gradient-to-br from-orange-500/10 to-orange-600/10 border border-orange-500/20 hover:border-orange-500/30 transition-all group">
+                        <div class="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-orange-500/20 flex items-center justify-center group-hover:scale-110 transition-transform">
+                            <svg class="w-5 h-5 sm:w-6 sm:h-6 text-orange-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+                        </div>
+                        <span class="text-[9px] sm:text-[10px] font-black text-orange-500 uppercase tracking-tighter">AI Archon</span>
+                    </button>
+                </div>
+
+                <!-- Assets Section -->
+                <div class="pt-2 sm:pt-4">
+                    <div class="mb-4 sm:mb-5 flex items-center justify-between">
+                        <h3 class="text-[10px] sm:text-[11px] font-black uppercase text-slate-600 tracking-[0.3em]">Your Assets</h3>
+                        <div class="flex gap-2">
+                            <button onclick="window.switchTab('cards')" class="text-[9px] sm:text-[10px] font-black text-slate-500 hover:text-orange-500 transition-colors">CARDS</button>
+                            <span class="text-slate-700">•</span>
+                            <button onclick="window.switchTab('canisters')" class="text-[9px] sm:text-[10px] font-black text-slate-500 hover:text-orange-500 transition-colors">NODES</button>
+                        </div>
+                    </div>
+                    <div id="assets-container" class="space-y-3 sm:space-y-4"></div>
+                </div>
+            </section>
+
+            <!-- VIEW: CARDS -->
+            <section id="view-cards" class="hidden space-y-8 pt-4">
+                <div class="flex justify-between items-center">
+                    <button onclick="window.switchTab('home')" class="text-slate-500 flex items-center gap-3 text-[10px] font-black uppercase tracking-widest active:opacity-50 transition-opacity"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M15 19l-7-7 7-7"/></svg> HUB</button>
+                    <button onclick="window.openIssueCard()" class="text-orange-500 text-[10px] font-black uppercase px-6 py-3 rounded-2xl box-3d bg-[#16161d] tracking-widest">Deploy Virtual Card</button>
+                </div>
+                <div id="cardList" class="space-y-6"></div>
+            </section>
+
+            <!-- VIEW: CANISTERS -->
+            <section id="view-canisters" class="hidden space-y-8 pt-4">
+                 <div class="flex justify-between items-center">
+                    <button onclick="window.switchTab('home')" class="text-slate-500 flex items-center gap-3 text-[10px] font-black uppercase tracking-widest active:opacity-50 transition-opacity"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M15 19l-7-7 7-7"/></svg> HUB</button>
+                    <button onclick="window.createCanister()" class="text-orange-500 text-[10px] font-black uppercase px-6 py-3 rounded-2xl box-3d bg-[#16161d] tracking-widest">Deploy Canister</button>
+                </div>
+                <div id="canister-list" class="grid gap-4"></div>
+            </section>
+        </main>
+    </div>
+
+    <!-- Bottom Navigation / Contact -->
+    <div class="nav-band-bottom w-full shadow-[0_-10px_30px_rgba(252,109,38,0.12)] relative z-[120]">
+        <div class="max-w-6xl mx-auto px-4 sm:px-6 py-3 sm:py-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+            <div class="flex items-center gap-2 text-white">
+                <div class="w-8 h-8 rounded-full bg-orange-500/25 flex items-center justify-center text-white">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 7c0-1.657 3.582-3 8-3s8 1.343 8 3-3.582 3-8 3-8-1.343-8-3Z"/>
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 7v4c0 1.657 3.582 3 8 3s8-1.343 8-3V7"/>
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 11v4c0 1.657 3.582 3 8 3s8-1.343 8-3v-4"/>
+                    </svg>
+                </div>
+                <div>
+                    <p class="text-[10px] sm:text-[11px] font-black uppercase tracking-widest">Portfolio AI Loop</p>
+                    <p class="text-[10px] text-orange-100">Stay connected. Stay profitable.</p>
+                </div>
+            </div>
+            <div class="flex items-center gap-3 text-[10px] sm:text-[11px] font-black uppercase tracking-widest text-white">
+                <a href="mailto:contact@pim-vault.local" class="px-3 py-2 rounded-xl bg-white/10 border border-white/10 hover:border-white/30 transition-all">Contact</a>
+                <button onclick="window.switchTab('home')" class="px-3 py-2 rounded-xl bg-white/5 border border-white/10 hover:border-white/30 transition-all">Dashboard</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL: DEPOSIT GATEWAY -->
+    <div id="modal-deposit" class="modal-overlay">
+        <div class="w-full max-w-[360px] box-3d rounded-[3rem] p-10 bg-[#16161d] relative overflow-hidden">
+            <!-- Processing Overlay -->
+            <div id="gateway-processing" class="hidden absolute inset-0 z-20 bg-[#16161d]/95 flex flex-col items-center justify-center">
+                <div class="relative w-24 h-24 mb-10">
+                    <div class="scan-line"></div>
+                    <svg class="w-full h-full text-orange-500 opacity-20" fill="currentColor" viewBox="0 0 24 24"><path d="M21 16.5c0 .38-.21.71-.53.88l-7.97 4.44c-.31.17-.69.17-1 0l-7.97-4.44c-.32-.17-.53-.5-.53-.88v-9c0-.38.21-.71.53-.88l7.97-4.44c.31-.17.69-.17 1 0l7.97 4.44c.32.17.53.5.53.88v9z"/></svg>
+                </div>
+                <p class="text-[11px] font-black uppercase text-orange-500 tracking-[0.4em] animate-pulse">Encoding Payment...</p>
+            </div>
+
+            <button onclick="window.closeModals()" class="absolute top-8 right-8 text-slate-500 hover:text-white text-3xl z-30 transition-colors">&times;</button>
+            <h3 class="text-2xl font-black mb-1 text-white tracking-tight">Purchase Assets</h3>
+            <p class="text-[10px] font-black text-slate-600 uppercase tracking-[0.3em] mb-10">PIM Secure Gateway v3.0</p>
+            
+            <div class="space-y-6 mb-8">
+                <div>
+                    <label class="text-[9px] font-black text-slate-500 uppercase ml-3 mb-2 block tracking-widest">Asset Vector</label>
+                    <div class="grid grid-cols-2 gap-3">
+                        <button onclick="window.setDepositType('ZAR')" id="dep-zar" class="option-btn py-4 rounded-2xl active box-3d bg-black/20">FIAT (ZAR)</button>
+                        <button onclick="window.setDepositType('PIM')" id="dep-pim" class="option-btn py-4 rounded-2xl box-3d bg-black/20">PIM TOKEN</button>
+                    </div>
+                </div>
+                
+                <div>
+                    <label class="text-[9px] font-black text-slate-500 uppercase ml-3 mb-2 block tracking-widest">Quantify Amount</label>
+                    <div class="relative">
+                        <input type="number" id="deposit-amount" placeholder="0.00" class="w-full bg-black/50 border border-white/5 rounded-3xl p-7 text-center text-3xl font-black text-white outline-none focus:border-orange-500/50 transition-all tabular-nums">
+                        <div class="absolute left-6 top-1/2 -translate-y-1/2 text-slate-500 font-black text-lg" id="currency-symbol">R</div>
+                    </div>
+                </div>
+
+                <div class="p-5 bg-black/30 rounded-3xl border border-white/5 box-3d">
+                    <p class="text-[9px] font-black text-slate-600 uppercase tracking-widest mb-3">Gateway Method</p>
+                    <div class="flex items-center gap-4">
+                        <div class="w-10 h-6 brand-gradient rounded-sm opacity-50"></div>
+                        <span class="text-[11px] font-bold text-slate-400">Secure Protocol Transfer</span>
+                    </div>
+                </div>
+            </div>
+
+            <button id="gateway-confirm-btn" onclick="window.confirmDeposit()" class="w-full py-6 brand-gradient rounded-3xl text-[11px] font-black uppercase text-white tracking-[0.3em] box-3d shadow-[0_20px_40px_rgba(252,109,38,0.2)]">AUTHORIZE TRANSACTION</button>
+        </div>
+    </div>
+
+    <!-- MODAL: TRANSFER HUB -->
+    <div id="modal-transfer" class="modal-overlay">
+        <div class="w-full max-w-[340px] box-3d rounded-[3rem] p-10 bg-[#16161d] relative">
+            <button onclick="window.closeModals()" class="absolute top-8 right-8 text-slate-500 text-3xl">&times;</button>
+            <div class="grid grid-cols-2 gap-4 bg-black/40 p-2 rounded-2xl mb-8 box-3d">
+                <button id="tab-send" onclick="window.setTransferTab('send')" class="option-btn py-4 rounded-xl active">TRANSMIT</button>
+                <button id="tab-rec" onclick="window.setTransferTab('receive')" class="option-btn py-4 rounded-xl">RECEIVE</button>
+            </div>
+            
+            <div id="view-send" class="space-y-5">
+                <div class="space-y-2">
+                    <label class="text-[9px] font-black text-slate-500 uppercase ml-2 tracking-widest">Asset</label>
+                    <select id="transfer-asset" class="w-full bg-black/50 border border-white/5 rounded-2xl p-5 text-[11px] font-black text-white outline-none uppercase tracking-widest"></select>
+                </div>
+                <div class="space-y-2">
+                    <label class="text-[9px] font-black text-slate-500 uppercase ml-2 tracking-widest">Target ID</label>
+                    <input type="text" id="transfer-dest" placeholder="HEX ADDRESS" class="w-full bg-black/50 border border-white/5 rounded-2xl p-5 text-[11px] font-mono font-bold text-orange-500 outline-none uppercase placeholder:text-slate-800">
+                </div>
+                <div class="space-y-2">
+                    <label class="text-[9px] font-black text-slate-500 uppercase ml-2 tracking-widest">Amount</label>
+                    <input type="number" id="transfer-amount" placeholder="0.00" class="w-full bg-black/50 border border-white/5 rounded-2xl p-6 text-center text-2xl font-black text-white outline-none">
+                </div>
+                <button onclick="window.executeTransfer()" class="w-full py-6 brand-gradient rounded-2xl text-[11px] font-black uppercase text-white tracking-widest box-3d mt-4">PUSH SIGNAL</button>
+            </div>
+
+            <div id="view-rec" class="hidden text-center space-y-8 py-4">
+                <div id="qrcode" class="p-6 bg-white rounded-3xl inline-block shadow-2xl"></div>
+                <div class="bg-black/50 p-6 rounded-2xl border border-white/5 box-3d">
+                    <p class="text-[9px] font-black text-slate-500 uppercase tracking-widest mb-3">NODE ADDRESS</p>
+                    <p id="rec-addr" class="text-[10px] font-mono text-orange-500 font-bold break-all select-all"></p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL: CARD DEPLOYMENT -->
+    <div id="modal-issue-card" class="modal-overlay">
+        <div class="w-full max-w-[340px] box-3d rounded-[3rem] p-10 bg-[#16161d] relative">
+            <button onclick="window.closeModals()" class="absolute top-8 right-8 text-slate-500">&times;</button>
+            <h3 class="text-2xl font-black mb-8 tracking-tight">Deploy Node Card</h3>
+            <div class="bg-black/50 p-8 rounded-3xl mb-10 flex justify-between items-center box-3d">
+                <div class="flex flex-col">
+                    <span class="text-[10px] font-black text-slate-500 uppercase tracking-widest">Issuance Cost</span>
+                    <span class="text-[10px] text-slate-700 font-bold">Standard Network Fee</span>
+                </div>
+                <span class="text-xl font-black text-orange-500 tabular-nums">R 50.00</span>
+            </div>
+            <button onclick="window.confirmIssueCard()" class="w-full py-6 brand-gradient rounded-3xl text-[11px] font-black uppercase text-white tracking-widest box-3d">INITIALIZE DEPLOYMENT</button>
+        </div>
+    </div>
+
+    <!-- Optional local development config (defines __firebase_config, __app_id) -->
+    <script src="./local.config.js"></script>
+
+    <script type="module">
+        // Firebase Modular SDK Imports
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, onSnapshot, setDoc, collection, addDoc, updateDoc, increment, deleteDoc, getDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // GitLab-powered storage
+        const STORAGE_KEY_PREFIX = 'pim_vault_';
+        let gitlabApi = null;
+        let gitlabReady = false;
+
+        const ASSETS = [
+            { id: 'pim', name: 'PIM Token', symbol: 'PIM', price: 0.12, color: 'text-orange-500' },
+            { id: 'bch', name: 'Bitcoin Cash', symbol: 'BCH', price: 7200, color: 'text-green-500' },
+            { id: 'usdt', name: 'Tether', symbol: 'USDT', price: 19.5, color: 'text-teal-400' }
+        ];
+
+        let state = { zar: 0, holdings: {}, user: null, pimWallets: [], cards: [], canisters: [] };
+        let activeDeposit = 'ZAR';
+
+        function loadLocalState() {
+            try {
+                const userId = state.user?.uid || 'guest';
+                const savedState = localStorage.getItem(STORAGE_KEY_PREFIX + userId);
+                if (savedState) {
+                    const parsed = JSON.parse(savedState);
+                    state.zar = parsed.zar || 0;
+                    state.holdings = parsed.holdings || {};
+                    state.pimWallets = parsed.pimWallets || [];
+                    state.cards = parsed.cards || [];
+                    state.canisters = parsed.canisters || [];
+                }
+            } catch (e) {
+                console.warn('Load state error:', e);
+            }
+        }
+
+        function persistLocalState() {
+            try {
+                const userId = state.user?.uid || 'guest';
+                localStorage.setItem(STORAGE_KEY_PREFIX + userId, JSON.stringify({
+                    zar: state.zar,
+                    holdings: state.holdings,
+                    pimWallets: state.pimWallets,
+                    cards: state.cards,
+                    canisters: state.canisters,
+                    lastUpdated: new Date().toISOString()
+                }));
+            } catch (e) {
+                console.warn('Persist state error:', e);
+            }
+        }
+
+        // --- AUTHENTICATION HANDLERS ---
+        function revealAppContent(label = 'Session Active') {
+            const authEl = document.getElementById('auth-screen');
+            const appEl = document.getElementById('app-content');
+            authEl.classList.add('hidden');
+            appEl.classList.remove('hidden');
+            appEl.classList.remove('opacity-0');
+            document.getElementById('userDisplayId').innerText = label;
+            loadLocalState();
+            updateUI();
+        }
+
+        window.handleLogout = () => {
+            try {
+                // Clear session storage
+                sessionStorage.removeItem('gitlab_tokens');
+                sessionStorage.removeItem('gitlab_user');
+                sessionStorage.removeItem('gitlab_oauth_state');
+                sessionStorage.removeItem('gitlab_code_verifier');
+                sessionStorage.removeItem('gitlab_base_url');
+                sessionStorage.removeItem('gitlab_client_id');
+                sessionStorage.removeItem('gitlab_redirect_uri');
+                
+                // Reset state
+                state = { zar: 0, holdings: {}, user: null, pimWallets: [], cards: [], canisters: [] };
+                
+                // Return to login screen
+                const authEl = document.getElementById('auth-screen');
+                const appEl = document.getElementById('app-content');
+                appEl.classList.add('hidden');
+                authEl.classList.remove('hidden');
+                
+                window.showToast("✓ LOGGED OUT");
+            } catch (e) {
+                console.error('Logout error:', e);
+            }
+        };
+
+        // GitLab is the primary auth - no Firebase listener needed
+
+        // --- GitLab OAuth (PKCE) Integration ---
+        const GITLAB_SCOPES = ['read_user','profile','email'];
+
+        function randomString(len = 64) {
+            const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-._~';
+            let s = '';
+            const array = new Uint8Array(len);
+            crypto.getRandomValues(array);
+            for (let i = 0; i < len; i++) s += chars[array[i] % chars.length];
+            return s;
+        }
+
+        async function sha256(str) {
+            const enc = new TextEncoder();
+            const data = enc.encode(str);
+            const hash = await crypto.subtle.digest('SHA-256', data);
+            return new Uint8Array(hash);
+        }
+
+        function base64Url(bytes) {
+            const bin = String.fromCharCode(...bytes);
+            const b64 = btoa(bin).replace(/=/g,'').replace(/\+/g,'-').replace(/\//g,'_');
+            return b64;
+        }
+
+        async function createCodeChallenge(verifier) {
+            const hashBytes = await sha256(verifier);
+            return base64Url(hashBytes);
+        }
+
+        function getRedirectUri() {
+            return window.location.origin + window.location.pathname;
+        }
+
+        window.gitlabStartAuth = async () => {
+            const btn = document.getElementById('gitlab-connect');
+            const txt = document.getElementById('login-text');
+            
+            try {
+                const baseUrl = (document.getElementById('gitlab-base-url').value || '').trim().replace(/\/$/, '');
+                const clientId = (document.getElementById('gitlab-client-id').value || '').trim();
+                
+                if (!baseUrl || !clientId) { 
+                    window.showToast('⚠ Enter GitLab URL and Application ID'); 
+                    return; 
+                }
+
+                btn.disabled = true;
+                txt.innerText = 'CONNECTING...';
+
+                const stateStr = randomString(48);
+                const verifier = randomString(64);
+                const challenge = await createCodeChallenge(verifier);
+                const redirectUri = getRedirectUri();
+
+                sessionStorage.setItem('gitlab_oauth_state', stateStr);
+                sessionStorage.setItem('gitlab_code_verifier', verifier);
+                sessionStorage.setItem('gitlab_base_url', baseUrl);
+                sessionStorage.setItem('gitlab_client_id', clientId);
+                sessionStorage.setItem('gitlab_redirect_uri', redirectUri);
+
+                const authorize = new URL(baseUrl + '/oauth/authorize');
+                authorize.searchParams.set('client_id', clientId);
+                authorize.searchParams.set('redirect_uri', redirectUri);
+                authorize.searchParams.set('response_type', 'code');
+                authorize.searchParams.set('state', stateStr);
+                authorize.searchParams.set('scope', GITLAB_SCOPES.join(' '));
+                authorize.searchParams.set('code_challenge', challenge);
+                authorize.searchParams.set('code_challenge_method', 'S256');
+
+                window.location.href = authorize.toString();
+            } catch (e) {
+                console.error(e);
+                window.showToast('✗ GITLAB AUTH ERROR');
+                btn.disabled = false;
+                txt.innerText = 'LOGIN WITH GITLAB';
+            }
+        };
+
+        async function gitlabHandleRedirect() {
+            const url = new URL(window.location.href);
+            const code = url.searchParams.get('code');
+            const stateStr = url.searchParams.get('state');
+            if (!code || !stateStr) return; // nothing to do
+
+            console.log('GitLab OAuth callback detected');
+            window.showToast('Processing GitLab authorization...');
+
+            try {
+                const savedState = sessionStorage.getItem('gitlab_oauth_state');
+                console.log('State check:', { received: stateStr.substring(0,10), saved: savedState?.substring(0,10) });
+                if (stateStr !== savedState) throw new Error('STATE MISMATCH - session may have been cleared');
+
+                const verifier = sessionStorage.getItem('gitlab_code_verifier');
+                const baseUrl = sessionStorage.getItem('gitlab_base_url');
+                const clientId = sessionStorage.getItem('gitlab_client_id');
+                const redirectUri = sessionStorage.getItem('gitlab_redirect_uri');
+                
+                console.log('Session data:', { baseUrl, clientId: clientId?.substring(0,10), redirectUri });
+                if (!verifier || !baseUrl || !clientId || !redirectUri) {
+                    throw new Error('MISSING SESSION - browser may have cleared storage. Try again.');
+                }
+
+                const body = new URLSearchParams({
+                    client_id: clientId,
+                    grant_type: 'authorization_code',
+                    code,
+                    redirect_uri: redirectUri,
+                    code_verifier: verifier
+                });
+
+                console.log('Exchanging code for token...');
+                const resp = await fetch(baseUrl + '/oauth/token', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                    body
+                });
+                
+                console.log('Token response status:', resp.status);
+                if (!resp.ok) {
+                    const errText = await resp.text();
+                    console.error('Token exchange error:', errText);
+                    throw new Error(`TOKEN EXCHANGE FAILED (${resp.status}): ${errText.substring(0,100)}`);
+                }
+                const tokens = await resp.json();
+                console.log('Tokens received:', { hasAccess: !!tokens.access_token, hasRefresh: !!tokens.refresh_token });
+                sessionStorage.setItem('gitlab_tokens', JSON.stringify(tokens));
+
+                // Fetch user info
+                console.log('Fetching user info...');
+                const uinfo = await fetch(baseUrl + '/oauth/userinfo', {
+                    headers: { 'Authorization': `Bearer ${tokens.access_token}` }
+                });
+                let userObj = null;
+                if (uinfo.ok) {
+                    userObj = await uinfo.json();
+                    console.log('User info from /oauth/userinfo:', userObj);
+                } else {
+                    console.log('/oauth/userinfo failed, trying /api/v4/user');
+                    const u = await fetch(baseUrl + '/api/v4/user', {
+                        headers: { 'Authorization': `Bearer ${tokens.access_token}` }
+                    });
+                    userObj = u.ok ? await u.json() : null;
+                    console.log('User info from /api/v4/user:', userObj);
+                }
+
+                if (userObj) {
+                    const name = userObj.name || userObj.username || 'GitLab User';
+                    const username = userObj.username || 'user';
+                    
+                    // Update state with GitLab user
+                    state.user = {
+                        uid: `gitlab-${userObj.id}`,
+                        name,
+                        username,
+                        email: userObj.email,
+                        avatar_url: userObj.avatar_url,
+                        gitlab: true
+                    };
+                    
+                    // Update user display immediately
+                    document.getElementById('gitlabUser').innerText = `@${username}`;
+                    document.getElementById('userDisplayId').innerText = `GitLab Connected`;
+                    
+                    // Store user info for persistence
+                    sessionStorage.setItem('gitlab_user', JSON.stringify(state.user));
+                    
+                    window.showToast(`✓ WELCOME ${name.toUpperCase()}`);
+                    console.log('GitLab login complete:', name);
+                    
+                    // Initialize demo balance if not set
+                    if (state.zar === 0) state.zar = 10000;
+                    
+                    // Smooth transition to dashboard
+                    const authEl = document.getElementById('auth-screen');
+                    const appEl = document.getElementById('app-content');
+                    
+                    authEl.classList.add('hidden');
+                    appEl.classList.remove('hidden');
+                    appEl.classList.remove('opacity-0');
+                    appEl.style.opacity = '1';
+                    
+                    updateUI(); // Refresh dashboard with data
+                } else {
+                    window.showToast('⚠ GITLAB USER INFO FAILED');
+                    console.warn('Could not fetch user info');
+                }
+
+                // Clean query params
+                url.searchParams.delete('code');
+                url.searchParams.delete('state');
+                window.history.replaceState({}, '', url.toString());
+                console.log('GitLab OAuth flow complete');
+            } catch (e) {
+                console.error('GitLab OAuth Callback Error:', e);
+                window.showToast(`✗ ${e.message || 'GITLAB AUTH ERROR'}`);
+            }
+        }
+
+        gitlabHandleRedirect();
+        
+        // Check if user already logged in on page load
+        window.addEventListener('DOMContentLoaded', () => {
+            loadLocalState();
+            const tokens = sessionStorage.getItem('gitlab_tokens');
+            const userInfo = sessionStorage.getItem('gitlab_user');
+            
+            if (tokens && userInfo) {
+                // User already authenticated, show dashboard
+                try {
+                    const user = JSON.parse(userInfo);
+                    state.user = user; // Restore user to state
+                    
+                    // Initialize demo balance if not set
+                    if (state.zar === 0) state.zar = 10000;
+                    
+                    document.getElementById('gitlabUser').innerText = `@${user.username || 'user'}`;
+                    document.getElementById('userDisplayId').innerText = `GitLab Connected`;
+                    
+                    const authEl = document.getElementById('auth-screen');
+                    const appEl = document.getElementById('app-content');
+                    authEl.classList.add('hidden');
+                    appEl.classList.remove('hidden');
+                    appEl.classList.remove('opacity-0');
+                    appEl.style.opacity = '1';
+                    updateUI();
+                    
+                    console.log('Session restored for:', user.username);
+                } catch (e) {
+                    console.error('Error restoring session:', e);
+                }
+            }
+        });
+
+        // GitLab storage - data persists locally and syncs to GitLab API when needed
+
+        // UI RENDERER FOR ASSETS
+        function updateUI() {
+            const container = document.getElementById('assets-container');
+            if (!container) return;
+            
+            let html = `
+                <div class="p-5 sm:p-6 rounded-2xl sm:rounded-3xl bg-[#16161d] border border-white/5 flex items-center justify-between box-3d group hover:border-orange-500/20 transition-all">
+                    <div class="flex items-center gap-4 sm:gap-5 flex-1 min-w-0">
+                        <div class="w-12 h-12 sm:w-14 sm:h-14 rounded-xl sm:rounded-2xl bg-gradient-to-br from-green-500/20 to-emerald-500/20 flex items-center justify-center text-green-500 font-black text-xs sm:text-sm border border-green-500/20 flex-shrink-0">ZAR</div>
+                        <div class="flex-1 min-w-0">
+                            <p class="text-xs sm:text-sm font-black text-white tracking-wide mb-1">South African Rand</p>
+                            <p class="text-[9px] sm:text-[10px] font-mono text-slate-600 font-bold">FIAT RESERVE</p>
+                        </div>
+                    </div>
+                    <div class="text-right flex-shrink-0">
+                        <p class="text-sm sm:text-base font-black text-white tabular-nums">R ${state.zar.toLocaleString(undefined, {minimumFractionDigits:2})}</p>
+                        <p class="text-[9px] sm:text-[10px] text-slate-600 font-bold tabular-nums">${state.zar.toLocaleString(undefined, {minimumFractionDigits:2})} ZAR</p>
+                    </div>
+                </div>
+            `;
+
+            let totalVal = state.zar;
+            ASSETS.forEach(a => {
+                const bal = state.holdings[a.id] || 0;
+                const val = bal * a.price;
+                totalVal += val;
+                
+                const colorClasses = {
+                    'text-orange-500': 'from-orange-500/20 to-orange-600/20 border-orange-500/20',
+                    'text-green-500': 'from-green-500/20 to-emerald-500/20 border-green-500/20',
+                    'text-teal-400': 'from-teal-400/20 to-cyan-400/20 border-teal-400/20'
+                };
+                const gradientClass = colorClasses[a.color] || 'from-slate-500/20 to-slate-600/20 border-slate-500/20';
+                
+                html += `
+                <div class="p-5 sm:p-6 rounded-2xl sm:rounded-3xl bg-[#16161d] border border-white/5 flex items-center justify-between box-3d group hover:border-orange-500/20 transition-all">
+                    <div class="flex items-center gap-4 sm:gap-5 flex-1 min-w-0">
+                        <div class="w-12 h-12 sm:w-14 sm:h-14 rounded-xl sm:rounded-2xl bg-gradient-to-br ${gradientClass} flex items-center justify-center font-black text-xs sm:text-sm border ${a.color} flex-shrink-0">${a.symbol}</div>
+                        <div class="flex-1 min-w-0">
+                            <p class="text-xs sm:text-sm font-black text-white tracking-wide mb-1">${a.name}</p>
+                            <p class="text-[9px] sm:text-[10px] font-mono text-slate-600 font-bold">${bal.toFixed(4)} ${a.symbol}</p>
+                        </div>
+                    </div>
+                    <div class="text-right flex-shrink-0">
+                        <p class="text-sm sm:text-base font-black text-white tabular-nums">R ${val.toLocaleString(undefined, {minimumFractionDigits:2})}</p>
+                        <p class="text-[9px] sm:text-[10px] ${a.color} font-bold tabular-nums">R ${a.price.toLocaleString()} ea</p>
+                    </div>
+                </div>`;
+            });
+
+            // PIM Wallet IDs section
+            const walletCount = state.pimWallets.length;
+            const walletList = state.pimWallets.slice(-6).reverse().map(id => `
+                <div class="px-3 py-2 rounded-xl bg-white/5 border border-white/10 font-mono text-[10px] sm:text-[11px] text-orange-200 break-all">${id}</div>
+            `).join('');
+
+            html += `
+            <div class="p-5 sm:p-6 rounded-2xl sm:rounded-3xl bg-gradient-to-br from-[#20161a] to-[#0f0a0c] border border-orange-500/20 box-3d">
+                <div class="flex items-center justify-between mb-4">
+                    <div>
+                        <p class="text-[10px] sm:text-[11px] font-black text-orange-400 uppercase tracking-[0.25em]">PIM On-Chain Wallets</p>
+                        <p class="text-xs sm:text-sm text-white font-black">${walletCount} wallet IDs minted</p>
+                    </div>
+                    <button onclick="window.mintPIM()" class="px-3 sm:px-4 py-2 rounded-xl bg-orange-500 text-white text-[10px] sm:text-[11px] font-black uppercase tracking-widest shadow-[0_10px_25px_rgba(252,109,38,0.25)] hover:bg-orange-400 transition-colors">Mint PIM</button>
+                </div>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3">
+                    ${walletList || '<div class="text-[10px] sm:text-[11px] text-slate-500">No wallets yet. Mint to create PIM IDs.</div>'}
+                </div>
+                <p class="mt-3 text-[9px] sm:text-[10px] text-orange-200">Rate: 1 PIM = R2 • Each PIM mints a unique wallet ID.</p>
+            </div>`;
+
+            container.innerHTML = html;
+            document.getElementById('totalNetValue').innerText = `R ${totalVal.toLocaleString(undefined, {minimumFractionDigits:2})}`;
+        }
+
+        // --- PAYMENT GATEWAY LOGIC ---
+        window.openDepositModal = () => document.getElementById('modal-deposit').classList.add('active');
+        window.setDepositType = (type) => {
+            activeDeposit = type;
+            document.getElementById('dep-zar').classList.toggle('active', type === 'ZAR');
+            document.getElementById('dep-pim').classList.toggle('active', type === 'PIM');
+            document.getElementById('currency-symbol').innerText = type === 'ZAR' ? 'R' : 'P';
+        };
+
+        window.confirmDeposit = async () => {
+            const amt = parseFloat(document.getElementById('deposit-amount').value);
+            if (!amt || amt <= 0) return window.showToast("INVALID VALUE");
+            
+            if (!firebaseReady) {
+                // Demo mode: add directly to local state
+                if (activeDeposit === 'ZAR') {
+                    state.zar += amt;
+                } else {
+                    state.holdings[activeDeposit.toLowerCase()] = (state.holdings[activeDeposit.toLowerCase()] || 0) + amt;
+                }
+                window.showToast(`✓ ADDED ${amt} ${activeDeposit}`);
+                window.closeModals();
+                document.getElementById('deposit-amount').value = "";
+                updateUI();
+                return;
+            }
+            
+            if (!state.user) return window.showToast('Login required');
+
+            const processing = document.getElementById('gateway-processing');
+            const confirmBtn = document.getElementById('gateway-confirm-btn');
+            
+            processing.classList.remove('hidden');
+            confirmBtn.disabled = true;
+
+            try {
+                // Processing simulation
+                await new Promise(r => setTimeout(r, 1200));
+
+                if (activeDeposit === 'ZAR') {
+                    state.zar += amt;
+                } else {
+                    const assetId = activeDeposit.toLowerCase();
+                    state.holdings[assetId] = (state.holdings[assetId] || 0) + amt;
+                }
+                
+                persistLocalState();
+                updateUI();
+                window.showToast("✓ TRANSACTION AUTHORIZED");
+                window.closeModals();
+            } catch (e) {
+                console.error(e);
+                window.showToast("✗ GATEWAY REJECTION");
+            } finally {
+                processing.classList.add('hidden');
+                confirmBtn.disabled = false;
+                document.getElementById('deposit-amount').value = "";
+            }
+        };
+
+        // --- UTILITY & NAVIGATION ---
+        window.switchTab = (id) => {
+            ['view-home', 'view-cards', 'view-canisters'].forEach(v => document.getElementById(v)?.classList.add('hidden'));
+            document.getElementById(`view-${id}`)?.classList.remove('hidden');
+        };
+
+        window.closeModals = () => document.querySelectorAll('.modal-overlay').forEach(m => m.classList.remove('active'));
+
+        window.openTransferModal = (type) => {
+            document.getElementById('modal-transfer').classList.add('active');
+            window.setTransferTab(type);
+        };
+
+        window.setTransferTab = (tab) => {
+            document.getElementById('tab-send').classList.toggle('active', tab === 'send');
+            document.getElementById('tab-rec').classList.toggle('active', tab === 'receive');
+            document.getElementById('view-send').classList.toggle('hidden', tab !== 'send');
+            document.getElementById('view-rec').classList.toggle('hidden', tab !== 'receive');
+            if (tab === 'receive' && state.user) {
+                document.getElementById('qrcode').innerHTML = "";
+                new QRCode(document.getElementById('qrcode'), { 
+                    text: state.user.uid, 
+                    width: 140, 
+                    height: 140, 
+                    colorDark : "#000000", 
+                    colorLight : "#ffffff" 
+                });
+                document.getElementById('rec-addr').innerText = state.user.uid;
+            } else {
+                const sel = document.getElementById('transfer-asset');
+                sel.innerHTML = `<option value="zar">ZAR (RESERVE)</option>` + ASSETS.map(a => `<option value="${a.id}">${a.symbol} (LIQUID)</option>`).join('');
+            }
+        };
+
+        window.executeTransfer = async () => {
+            if (!state.user) return window.showToast('Login required');
+            const asset = document.getElementById('transfer-asset').value;
+            const target = document.getElementById('transfer-dest').value;
+            const amt = parseFloat(document.getElementById('transfer-amount').value);
+            if (!target || amt <= 0) return window.showToast("✗ TARGET DATA MISSING");
+            
+            const current = asset === 'zar' ? state.zar : (state.holdings[asset] || 0);
+            if (current < amt) return window.showToast("✗ INSUFFICIENT FUNDS");
+            
+            if (asset === 'zar') {
+                state.zar -= amt;
+            } else {
+                state.holdings[asset] = (state.holdings[asset] || 0) - amt;
+            }
+            
+            persistLocalState();
+            updateUI();
+            window.showToast("✓ SIGNAL TRANSMITTED");
+            window.closeModals();
+        };
+
+        window.openIssueCard = () => document.getElementById('modal-issue-card').classList.add('active');
+        window.confirmIssueCard = async () => {
+            if (!state.user) return window.showToast('Login required');
+            if (state.zar < 50) return window.showToast("✗ INSUFFICIENT ZAR BALANCE");
+            
+            state.cards.push({
+                id: Date.now().toString(),
+                last4: Math.floor(1000 + Math.random() * 8999),
+                expiry: '10/30'
+            });
+            state.zar -= 50;
+            
+            persistLocalState();
+            updateUI();
+            renderCards();
+            window.closeModals();
+            window.showToast("✓ CARD NODE DEPLOYED");
+        };
+
+        window.createCanister = async () => {
+            if (!state.user) return window.showToast('Login required');
+            const name = prompt("ASSIGN NODE NAME:");
+            if (name) {
+                state.canisters.push({
+                    id: Date.now().toString(),
+                    name: name.toUpperCase(),
+                    balance: 0
+                });
+                persistLocalState();
+                renderCanisters();
+            }
+        };
+
+        window.deleteVaultDoc = async (col, id) => {
+            if (!state.user) return window.showToast('Login required');
+            if (!confirm("Confirm deletion of node data?")) return;
+            
+            if (col === 'cards') {
+                state.cards = state.cards.filter(c => c.id !== id);
+            } else if (col === 'canisters') {
+                state.canisters = state.canisters.filter(c => c.id !== id);
+            }
+            
+            persistLocalState();
+            updateUI();
+            if (col === 'cards') renderCards();
+            if (col === 'canisters') renderCanisters();
+        };
+
+        window.showToast = (msg) => {
+            const t = document.getElementById('toast');
+            document.getElementById('toast-msg').innerText = msg;
+            t.classList.add('active');
+            setTimeout(() => t.classList.remove('active'), 3500);
+        };
+
+        function renderCards() {
+            const list = document.getElementById('cardList');
+            if (!list) return;
+            if (state.cards.length === 0) { 
+                list.innerHTML = `<div class="p-16 text-center text-slate-800 text-[11px] font-black uppercase tracking-[0.4em]">NO VIRTUAL NODES ACTIVE</div>`; 
+                return; 
+            }
+            list.innerHTML = state.cards.map(c => `
+                <div class="p-8 rounded-[3rem] bg-gradient-to-br from-[#20202a] to-[#0a0a0f] box-3d relative overflow-hidden border border-white/5">
+                    <div class="flex justify-between items-center mb-10">
+                        <p class="text-[10px] font-black text-slate-500 uppercase tracking-widest">Titanium Protocol</p>
+                        <div class="w-10 h-6 bg-orange-500/20 rounded-md"></div>
+                    </div>
+                    <p class="text-2xl font-mono text-white tracking-[0.25em] mb-10 tabular-nums">•••• •••• •••• ${c.last4}</p>
+                    <div class="flex justify-between items-end">
+                        <div>
+                            <p class="text-[9px] font-black text-slate-700 uppercase mb-1">Status Active</p>
+                            <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Exp ${c.expiry}</p>
+                        </div>
+                        <button onclick="window.deleteVaultDoc('cards', '${c.id}')" class="text-[9px] text-red-500 font-black uppercase tracking-widest border-b border-red-500/30 pb-1">Term</button>
+                    </div>
+                </div>`).join('');
+        }
+
+        function renderCanisters() {
+            const list = document.getElementById('canister-list');
+            if (!list) return;
+            if (state.canisters.length === 0) { 
+                list.innerHTML = `<div class="p-16 text-center text-slate-800 text-[11px] font-black uppercase tracking-[0.4em]">NO ACTIVE CANISTERS</div>`; 
+                return; 
+            }
+            list.innerHTML = state.canisters.map(c => `
+                <div class="p-6 rounded-3xl bg-[#16161d] flex justify-between items-center box-3d border border-white/5">
+                    <div>
+                        <p class="text-[11px] font-black text-white tracking-widest mb-1">${c.name}</p>
+                        <div class="flex items-center gap-2">
+                            <div class="w-1.5 h-1.5 rounded-full bg-green-500"></div>
+                            <p class="text-[9px] text-slate-600 font-mono font-bold tracking-tighter">ENCRYPTED NODE</p>
+                        </div>
+                    </div>
+                    <div class="text-right">
+                        <p class="text-sm font-black text-white tabular-nums mb-1">R ${(c.balance || 0).toLocaleString()}</p>
+                        <button onclick="window.deleteVaultDoc('canisters', '${c.id}')" class="text-[9px] text-red-600/60 font-black uppercase tracking-widest">DECOMMISSION</button>
+                    </div>
+                </div>`).join('');
+        }
+
+        // --- PIM Token Minting (Demo / On-chain placeholder) ---
+        function generateWalletId() {
+            if (crypto.randomUUID) return `PIM-${crypto.randomUUID().replace(/-/g,'').slice(0,18)}`;
+            return 'PIM-' + Math.random().toString(16).slice(2,10) + Math.random().toString(16).slice(2,10);
+        }
+
+        async function adjustHoldingsLocal(assetId, delta) {
+            state.holdings[assetId] = (state.holdings[assetId] || 0) + delta;
+            if (assetId === 'zar') state.zar += delta;
+            updateUI();
+        }
+
+        window.mintPIM = async () => {
+            const input = prompt('💎 How many PIM tokens to mint?\n\nRate: 1 PIM = R2\nYour Balance: R' + state.zar.toFixed(2));
+            const qty = parseInt(input, 10);
+            if (!qty || qty <= 0) return window.showToast('⚠ Enter valid quantity');
+            const cost = qty * 2;
+
+            if (state.zar < cost) return window.showToast('✗ INSUFFICIENT ZAR');
+
+            const newWallets = Array.from({length: qty}, () => generateWalletId());
+            state.pimWallets = [...state.pimWallets, ...newWallets];
+            
+            // Deduct ZAR and add PIM holdings
+            state.zar -= cost;
+            state.holdings.pim = (state.holdings.pim || 0) + qty;
+            
+            persistLocalState();
+
+            window.showToast(`✓ MINTED ${qty} PIM @ R${cost}`);
+            updateUI();
+        };
+
+        // Auto-save state changes
+        setInterval(() => {
+            if (state.pimWallets.length > 0) persistLocalState();
+        }, 5000);
+    </script>
+</body>
+</html>
