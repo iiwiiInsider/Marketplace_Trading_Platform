@@ -5,6 +5,7 @@ export const CHAINS = {
   137: { name: 'Polygon', nativeSymbol: 'POL' },
   42161: { name: 'Arbitrum One', nativeSymbol: 'ETH' },
   43114: { name: 'Avalanche C-Chain', nativeSymbol: 'AVAX' },
+  31337: { name: 'Hardhat Local', nativeSymbol: 'ETH' },
   11155111: { name: 'Sepolia (testnet)', nativeSymbol: 'ETH' },
 };
 

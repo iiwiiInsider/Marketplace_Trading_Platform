@@ -1,0 +1,23 @@
+{
+  "name": "pim-network",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {
+    "node": "hardhat node",
+    "deploy": "hardhat run scripts/deploy.js --network localhost",
+    "deploy:sync": "hardhat run scripts/deploy-and-sync.js --network localhost"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "description": "",
+  "devDependencies": {
+    "@nomiclabs/hardhat-ethers": "^2.2.3",
+    "ethers": "^5.7.2",
+    "hardhat": "^2.22.1"
+  },
+  "type": "commonjs",
+  "dependencies": {
+    "@openzeppelin/contracts": "^5.0.2"
+  }
+}

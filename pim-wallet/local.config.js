@@ -17,8 +17,8 @@ window.__app_id = "pim-vault-stable";
 // If login isn't working, set these to match your GitLab OAuth Application.
 // Redirect URI must match the page URL exactly (e.g. http://localhost:8000/pim-wallet/index.html).
 //
-// window.__gitlab_base_url = "https://gitlab.com";
-// window.__gitlab_client_id = "YOUR_GITLAB_OAUTH_APPLICATION_ID";
+window.__gitlab_base_url = "https://gitlab.com";
+window.__gitlab_client_id = "96cee0999c5136a8f06e2fa8148e6e162d5154bda1a767c60aaf1bea3a7fe664";
 //
 // Optional: only if your app/instance requires it.
 // window.__gitlab_client_secret = "YOUR_GITLAB_OAUTH_CLIENT_SECRET";

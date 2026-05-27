@@ -21,4 +21,26 @@ export const ERC20_ABI = [
     outputs: [{ name: '', type: 'string' }],
     type: 'function',
   },
+  {
+    constant: true,
+    inputs: [],
+    name: 'totalSupply',
+    outputs: [{ name: '', type: 'uint256' }],
+    type: 'function',
+  },
+  // PIMToken extension
+  {
+    constant: true,
+    inputs: [],
+    name: 'maxSupply',
+    outputs: [{ name: '', type: 'uint256' }],
+    type: 'function',
+  },
+  {
+    constant: false,
+    inputs: [{ name: 'amount', type: 'uint256' }],
+    name: 'mint',
+    outputs: [],
+    type: 'function',
+  },
 ];

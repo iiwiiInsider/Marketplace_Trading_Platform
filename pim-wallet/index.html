@@ -293,6 +293,22 @@
         }
         .modal-overlay.active { display: flex; opacity: 1; }
 
+        .modal-overlay.scrollable {
+            align-items: flex-start;
+            overflow-y: auto;
+            padding: 18px 12px;
+        }
+
+        .modal-card {
+            max-height: calc(100vh - 64px);
+            overflow-y: auto;
+        }
+
+        html.modal-open,
+        html.modal-open body {
+            overflow: hidden;
+        }
+
         .toast { 
             position: fixed; 
             top: 24px; 
@@ -766,17 +782,14 @@
                     <div class="flex items-center justify-between gap-3">
                         <div class="min-w-0">
                             <p class="text-[9px] font-black uppercase tracking-widest text-orange-300">Mint</p>
-                            <p id="pimPanelWalletCount" class="text-[11px] text-slate-300">0 wallet IDs minted</p>
-                            <p class="mt-1 text-[9px] text-orange-200">Rate: 1 PIM = R2 (local simulation)</p>
+                            <p id="pimPanelWalletCount" class="text-[11px] text-slate-300">Max supply: 10,000,000 PIM (on-chain)</p>
+                            <p class="mt-1 text-[9px] text-orange-200">On-chain minting is available in PIM AR Wallet.</p>
                         </div>
                         <button onclick="window.mintPIM()" class="h-11 px-4 rounded-2xl bg-orange-500 text-white text-[10px] font-black uppercase tracking-widest shadow-[0_10px_25px_rgba(252,109,38,0.25)] hover:bg-orange-400 transition-colors">Mint PIM</button>
                     </div>
                 </div>
 
-                <div class="mt-3">
-                    <button onclick="window.togglePimWalletList()" class="w-full h-11 rounded-2xl bg-[#16161d] border border-white/10 text-slate-200 text-[10px] font-black uppercase tracking-widest hover:text-white transition-colors">Toggle Wallet IDs</button>
-                    <div id="pimPanelWalletList" class="mt-3 hidden max-h-44 overflow-y-auto custom-scrollbar space-y-2"></div>
-                </div>
+                <div id="pimPanelWalletList" class="mt-3 max-h-44 overflow-y-auto custom-scrollbar space-y-2"></div>
             </div>
         </section>
 
@@ -785,12 +798,10 @@
             <!-- Investment Hero -->
             <section class="mt-4 sm:mt-6 mb-6">
                 <div class="box-3d rounded-[2rem] sm:rounded-[2.5rem] p-6 sm:p-8 bg-gradient-to-br from-[#171720] via-[#12121a] to-[#0f0f17] border border-white/10 relative overflow-hidden">
-                    <div class="absolute -right-10 -top-10 w-40 h-40 bg-orange-500/10 blur-[70px] rounded-full"></div>
-                    <div class="absolute -left-10 -bottom-10 w-40 h-40 bg-cyan-500/10 blur-[70px] rounded-full"></div>
                     <div class="relative">
-                        <p class="text-[9px] sm:text-[10px] font-black text-slate-500 uppercase tracking-[0.35em] mb-2">Investment Management</p>
-                        <h2 class="text-2xl sm:text-3xl lg:text-4xl font-black text-white tracking-tight">3-Token Portfolio</h2>
-                        <p class="mt-2 text-xs sm:text-sm text-slate-400 max-w-2xl">A clean, local-first dashboard to manage PIM, BCH, and USDT with simple buy/sell controls and a clear portfolio summary.</p>
+                        <p class="text-[9px] sm:text-[10px] font-black text-slate-500 uppercase tracking-[0.35em] mb-2">Portfolio</p>
+                        <h2 class="text-2xl sm:text-3xl lg:text-4xl font-black text-white tracking-tight">Overview</h2>
+                        <p class="mt-2 text-xs sm:text-sm text-slate-400 max-w-2xl">Total value, cash, and invested amount.</p>
 
                         <div class="mt-5 grid grid-cols-1 sm:grid-cols-3 gap-3">
                             <div class="p-4 rounded-2xl bg-white/5 border border-white/10">
@@ -855,6 +866,15 @@
                             <label class="text-[9px] font-black uppercase tracking-widest text-slate-500 ml-2">Sell Units</label>
                             <input id="invSellUnits" inputmode="decimal" class="mt-1 w-full bg-black/40 border border-white/10 rounded-2xl p-3 text-[12px] text-white outline-none focus:border-orange-500/50" placeholder="e.g. 10" />
                             <button onclick="window.invSell()" class="mt-2 w-full h-12 rounded-2xl bg-[#16161d] border border-white/10 text-slate-200 font-black uppercase tracking-widest text-[11px] hover:text-white hover:border-orange-500/20 transition-colors">Sell</button>
+                        </div>
+
+                        <div class="pt-3 border-t border-white/10">
+                            <p class="text-[10px] font-black uppercase tracking-[0.3em] text-slate-600 mb-2">ZAR Wallet</p>
+                            <div class="grid grid-cols-2 gap-2">
+                                <button onclick="window.openZarDeposit()" class="h-11 rounded-2xl bg-orange-500 text-white text-[10px] font-black uppercase tracking-widest shadow-[0_10px_25px_rgba(252,109,38,0.25)] hover:bg-orange-400 transition-colors">Deposit</button>
+                                <button onclick="window.openZarWithdraw()" class="h-11 rounded-2xl bg-white/5 border border-white/10 text-slate-200 text-[10px] font-black uppercase tracking-widest hover:text-white hover:border-orange-500/25 transition-colors">Withdraw</button>
+                            </div>
+                            <p class="mt-2 text-[10px] text-slate-500 font-mono">Telegram testing: intents + refs (no overlap).</p>
                         </div>
                     </div>
 
@@ -944,6 +964,116 @@
         </div>
     </div>
 
+    <!-- ZAR Deposit (Telegram test) -->
+    <div id="zarDepositOverlay" class="modal-overlay scrollable" aria-hidden="true" onclick="window.closeZarDeposit(event)">
+        <div class="w-full max-w-xl mx-auto">
+            <div class="box-3d rounded-[2rem] bg-[#0b0b10] border border-white/10 overflow-hidden modal-card">
+                <div class="p-5 sm:p-6 border-b border-white/10 flex items-center justify-between gap-3">
+                    <div class="min-w-0">
+                        <p class="text-[10px] font-black uppercase tracking-[0.35em] text-slate-500">ZAR Wallet</p>
+                        <p class="text-base font-black text-white truncate">Deposit ZAR (via Telegram)</p>
+                        <p id="zarDepositSub" class="mt-1 text-[11px] text-slate-300 font-mono break-all"></p>
+                    </div>
+                    <button class="w-10 h-10 rounded-2xl box-3d bg-[#16161d] text-slate-400 hover:text-white" onclick="window.closeZarDeposit()" aria-label="Close deposit">
+                        <svg class="w-5 h-5 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12"/></svg>
+                    </button>
+                </div>
+
+                <div class="p-5 sm:p-6">
+                    <div class="mt-4">
+                        <div class="p-4 rounded-2xl bg-white/5 border border-white/10">
+                            <p class="text-[10px] font-black uppercase tracking-[0.3em] text-slate-600">How it works</p>
+                            <p class="mt-2 text-[11px] text-slate-400 leading-relaxed">Step 1: create an intent (amount → ref). Step 2: send the ref to Telegram. Step 3: your bot credits the wallet via <span class="text-slate-200 font-mono">window.confirmZarDeposit(ref)</span>.</p>
+                        </div>
+
+                        <label class="text-[9px] font-black uppercase tracking-widest text-slate-500 ml-2">Amount (ZAR)</label>
+                        <div class="mt-1 flex gap-2">
+                            <input id="zarDepositAmount" inputmode="decimal" class="flex-1 bg-black/40 border border-white/10 rounded-2xl p-3 text-[12px] text-white outline-none focus:border-orange-500/50" placeholder="e.g. 250" />
+                            <button onclick="window.zarDepositMax()" class="h-11 px-4 rounded-2xl bg-white/5 border border-white/10 text-slate-200 text-[10px] font-black uppercase tracking-widest hover:text-white">MAX</button>
+                        </div>
+                        <p id="zarDepositHint" class="mt-2 text-[11px] text-slate-400 font-mono"></p>
+                    </div>
+
+                    <div class="mt-4">
+                        <button onclick="window.createZarDepositFromUI()" class="w-full h-12 rounded-2xl bg-orange-500 text-white font-black uppercase tracking-widest text-[11px] shadow-[0_10px_25px_rgba(252,109,38,0.25)] hover:bg-orange-400 transition-colors">Create Deposit Intent</button>
+                    </div>
+
+                    <div class="mt-4 p-4 rounded-2xl bg-gradient-to-br from-orange-500/10 to-white/5 border border-orange-500/20">
+                        <div class="flex items-start justify-between gap-3">
+                            <div class="min-w-0">
+                                <p class="text-[10px] font-black uppercase tracking-[0.3em] text-slate-500">Step 2</p>
+                                <p class="text-sm font-black text-white">Latest deposit reference</p>
+                                <p class="mt-1 text-[11px] text-slate-400 leading-relaxed">Copy and paste this ref into Telegram to confirm the deposit.</p>
+                            </div>
+                            <button id="zarDepositCopyLatestBtn" onclick="window.copyLatestZarDepositRef()" class="h-10 px-4 rounded-2xl bg-white/5 border border-white/10 text-slate-200 text-[10px] font-black uppercase tracking-widest hover:text-white">Copy Ref</button>
+                        </div>
+                        <div class="mt-3 p-3 rounded-2xl bg-black/40 border border-white/10">
+                            <p id="zarDepositLatestRef" class="text-[11px] text-slate-200 font-mono break-all">—</p>
+                            <p id="zarDepositLatestMeta" class="mt-1 text-[10px] text-slate-500 font-mono"></p>
+                        </div>
+                    </div>
+
+                    <div class="mt-5">
+                        <button id="zarDepositPendingToggle" onclick="window.toggleZarDepositPending()" class="w-full flex items-center justify-between gap-3 px-4 py-3 rounded-2xl bg-white/5 border border-white/10 hover:border-orange-500/25 transition-colors" aria-expanded="false">
+                            <span class="text-[10px] font-black uppercase tracking-[0.35em] text-slate-500">Advanced • Pending intents</span>
+                            <span class="flex items-center gap-2">
+                                <span id="zarDepositPendingCount" class="text-[10px] text-slate-400 font-mono">0</span>
+                                <svg id="zarDepositPendingChevron" class="w-4 h-4 text-slate-500 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 9l-7 7-7-7"/></svg>
+                            </span>
+                        </button>
+                        <div id="zarDepositPendingSection" class="mt-3 hidden">
+                            <div id="zarDepositList" class="space-y-2"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ZAR Withdraw (Telegram test) -->
+    <div id="zarWithdrawOverlay" class="modal-overlay scrollable" aria-hidden="true" onclick="window.closeZarWithdraw(event)">
+        <div class="w-full max-w-xl mx-auto">
+            <div class="box-3d rounded-[2rem] bg-[#0b0b10] border border-white/10 overflow-hidden modal-card">
+                <div class="p-5 sm:p-6 border-b border-white/10 flex items-center justify-between gap-3">
+                    <div class="min-w-0">
+                        <p class="text-[10px] font-black uppercase tracking-[0.35em] text-slate-500">ZAR Wallet</p>
+                        <p class="text-base font-black text-white truncate">Withdraw ZAR (via Telegram)</p>
+                        <p id="zarWithdrawSub" class="mt-1 text-[11px] text-slate-300 font-mono break-all"></p>
+                    </div>
+                    <button class="w-10 h-10 rounded-2xl box-3d bg-[#16161d] text-slate-400 hover:text-white" onclick="window.closeZarWithdraw()" aria-label="Close withdraw">
+                        <svg class="w-5 h-5 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12"/></svg>
+                    </button>
+                </div>
+
+                <div class="p-5 sm:p-6">
+                    <div class="p-4 rounded-2xl bg-white/5 border border-white/10">
+                        <p class="text-[10px] font-black uppercase tracking-[0.3em] text-slate-600">Telegram Bot Hook</p>
+                        <p class="mt-2 text-[11px] text-slate-400 leading-relaxed">Create a withdraw request (reference + amount). Your bot can call <span class="text-slate-200 font-mono">window.confirmZarWithdraw(ref)</span> to mark it completed, or <span class="text-slate-200 font-mono">window.cancelZarWithdraw(ref)</span> to refund.</p>
+                    </div>
+
+                    <div class="mt-4">
+                        <label class="text-[9px] font-black uppercase tracking-widest text-slate-500 ml-2">Amount (ZAR)</label>
+                        <div class="mt-1 flex gap-2">
+                            <input id="zarWithdrawAmount" inputmode="decimal" class="flex-1 bg-black/40 border border-white/10 rounded-2xl p-3 text-[12px] text-white outline-none focus:border-orange-500/50" placeholder="e.g. 250" />
+                            <button onclick="window.zarWithdrawMax()" class="h-11 px-4 rounded-2xl bg-white/5 border border-white/10 text-slate-200 text-[10px] font-black uppercase tracking-widest hover:text-white">MAX</button>
+                        </div>
+                        <p id="zarWithdrawHint" class="mt-2 text-[11px] text-slate-400 font-mono"></p>
+                    </div>
+
+                    <div class="mt-4 flex gap-2">
+                        <button onclick="window.createZarWithdrawFromUI()" class="flex-1 h-12 rounded-2xl bg-white/5 border border-white/10 text-slate-200 font-black uppercase tracking-widest text-[11px] hover:text-white hover:border-orange-500/25 transition-colors">Create Withdraw Request</button>
+                        <button onclick="window.copyLatestZarWithdrawRef()" class="h-12 px-4 rounded-2xl bg-white/5 border border-white/10 text-slate-200 text-[10px] font-black uppercase tracking-widest hover:text-white">Copy Latest Ref</button>
+                    </div>
+
+                    <div class="mt-5">
+                        <p class="text-[10px] font-black uppercase tracking-[0.35em] text-slate-500">Pending withdraw requests</p>
+                        <div id="zarWithdrawList" class="mt-3 space-y-2"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
 
     <script>
         // GitLab-powered wallet - no Firebase
@@ -982,6 +1112,7 @@
             zar: 10000, 
             holdings: {}, 
             user: null, 
+            payments: null,
             pimWallets: [], 
             cards: [], 
             canisters: [],
@@ -1000,6 +1131,7 @@
                     const parsed = JSON.parse(savedState);
                     state.zar = parsed.zar || 10000;
                     state.holdings = parsed.holdings || {};
+                    state.payments = parsed.payments && typeof parsed.payments === 'object' ? parsed.payments : null;
                     state.pimWallets = parsed.pimWallets || [];
                     state.cards = parsed.cards || [];
                     state.canisters = parsed.canisters || [];
@@ -1018,6 +1150,9 @@
                     }
                     console.log('Loaded state for:', userId);
                 }
+
+                // Always ensure payments exists and is sane.
+                ensurePaymentState();
             } catch (e) {
                 console.warn('Load state error:', e);
             }
@@ -1026,9 +1161,11 @@
         function persistLocalState() {
             try {
                 const userId = state.user?.uid || 'guest';
+                ensurePaymentState();
                 localStorage.setItem(STORAGE_KEY_PREFIX + userId, JSON.stringify({
                     zar: state.zar,
                     holdings: state.holdings,
+                    payments: state.payments,
                     pimWallets: state.pimWallets,
                     cards: state.cards,
                     canisters: state.canisters,
@@ -1124,6 +1261,58 @@
             }
             if (!state.invest.avgCost || typeof state.invest.avgCost !== 'object') state.invest.avgCost = {};
             if (!Array.isArray(state.invest.activity)) state.invest.activity = [];
+        }
+
+        function ensurePaymentState() {
+            if (!state.payments || typeof state.payments !== 'object') state.payments = {};
+            if (!Array.isArray(state.payments.pendingZarDeposits)) state.payments.pendingZarDeposits = [];
+            if (!Array.isArray(state.payments.pendingZarWithdrawals)) state.payments.pendingZarWithdrawals = [];
+
+            // Basic sanitization
+            state.payments.pendingZarDeposits = state.payments.pendingZarDeposits
+                .filter(x => x && typeof x === 'object' && x.ref)
+                .slice(0, 25);
+            state.payments.pendingZarWithdrawals = state.payments.pendingZarWithdrawals
+                .filter(x => x && typeof x === 'object' && x.ref)
+                .slice(0, 25);
+        }
+
+        // ----------------------------
+        // Overlay manager (prevents modal overlap)
+        // ----------------------------
+        const __OVERLAY_IDS__ = ['cartOverlay', 'checkoutOverlay', 'zarDepositOverlay', 'zarWithdrawOverlay'];
+
+        function __anyOverlayOpen__() {
+            return __OVERLAY_IDS__.some(id => {
+                const el = document.getElementById(id);
+                return el && el.classList.contains('active');
+            });
+        }
+
+        function __syncOverlayLock__() {
+            try {
+                document.documentElement.classList.toggle('modal-open', __anyOverlayOpen__());
+            } catch (_) {}
+        }
+
+        function __closeOverlay__(id) {
+            const el = document.getElementById(id);
+            if (!el) return;
+            el.classList.remove('active');
+            el.setAttribute('aria-hidden', 'true');
+            __syncOverlayLock__();
+        }
+
+        function __openOverlay__(id) {
+            // Close others first
+            for (const other of __OVERLAY_IDS__) {
+                if (other !== id) __closeOverlay__(other);
+            }
+            const el = document.getElementById(id);
+            if (!el) return;
+            el.classList.add('active');
+            el.setAttribute('aria-hidden', 'false');
+            __syncOverlayLock__();
         }
 
         function pushActivity(type, tokenId, detail) {
@@ -1253,6 +1442,324 @@
             renderInvestmentDashboard();
             renderPimPanel();
             window.showToast(`✓ FUNDS ADDED: ${formatZar(amt)}`);
+        };
+
+        // ----------------------------
+        // ZAR Wallet (Deposit / Withdraw) — separate Telegram test flows
+        // ----------------------------
+        const ZAR_DEPOSIT_CAP = 100000;
+
+        function zarUserTag() {
+            return state.user?.username ? '@' + state.user.username : '@guest';
+        }
+
+        function zarAvailableBalance() {
+            return Math.max(0, Number(state.zar || 0));
+        }
+
+        function sanitizeMoney(n) {
+            const v = Number(n || 0);
+            if (!isFinite(v)) return 0;
+            return Math.floor(Math.max(0, v) * 100) / 100;
+        }
+
+        function makeZarRef(kind) {
+            const uid = state.user?.uid || 'guest';
+            const k = (kind || 'ZAR').toString().toUpperCase().replace(/[^A-Z0-9_-]/g, '');
+            return `PIM-${k}-${uid}-${Date.now().toString(36).toUpperCase()}-${Math.random().toString(16).slice(2, 6).toUpperCase()}`;
+        }
+
+        function pendingDeposits() {
+            ensurePaymentState();
+            return state.payments.pendingZarDeposits;
+        }
+
+        function pendingWithdrawals() {
+            ensurePaymentState();
+            return state.payments.pendingZarWithdrawals;
+        }
+
+        function zarDepositPendingOpen() {
+            try { return localStorage.getItem('pim_ui_zarDepositPending') === '1'; } catch (_) { return false; }
+        }
+
+        function setZarDepositPendingOpen(open) {
+            const isOpen = !!open;
+            try { localStorage.setItem('pim_ui_zarDepositPending', isOpen ? '1' : '0'); } catch (_) {}
+            const section = document.getElementById('zarDepositPendingSection');
+            const toggle = document.getElementById('zarDepositPendingToggle');
+            const chevron = document.getElementById('zarDepositPendingChevron');
+            if (section) section.classList.toggle('hidden', !isOpen);
+            if (toggle) toggle.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+            if (chevron) chevron.style.transform = isOpen ? 'rotate(180deg)' : '';
+        }
+
+        function renderZarDepositUI() {
+            const sub = document.getElementById('zarDepositSub');
+            const hint = document.getElementById('zarDepositHint');
+            const listEl = document.getElementById('zarDepositList');
+            const latestRefEl = document.getElementById('zarDepositLatestRef');
+            const latestMetaEl = document.getElementById('zarDepositLatestMeta');
+            const copyLatestBtn = document.getElementById('zarDepositCopyLatestBtn');
+            const pendingCountEl = document.getElementById('zarDepositPendingCount');
+            if (sub) sub.textContent = `${zarUserTag()} • Available ${formatZar(zarAvailableBalance())}`;
+            if (hint) hint.textContent = `Max per request: ${formatZar(ZAR_DEPOSIT_CAP)}.`;
+
+            const list = pendingDeposits();
+            const latest = list?.[0] || null;
+            const when = latest?.createdAt ? new Date(latest.createdAt) : null;
+            const time = when && isFinite(when.getTime()) ? when.toLocaleString() : '';
+            if (latestRefEl) latestRefEl.textContent = latest?.ref || 'No active deposit intent.';
+            if (latestMetaEl) latestMetaEl.textContent = latest ? `${formatZar(Number(latest.amount || 0))}${time ? ' • ' + time : ''}` : 'Create a deposit intent to generate a reference.';
+
+            if (copyLatestBtn) {
+                const enabled = !!latest?.ref;
+                copyLatestBtn.disabled = !enabled;
+                copyLatestBtn.classList.toggle('opacity-50', !enabled);
+                copyLatestBtn.classList.toggle('cursor-not-allowed', !enabled);
+            }
+
+            if (pendingCountEl) pendingCountEl.textContent = String(list?.length || 0);
+            setZarDepositPendingOpen(zarDepositPendingOpen());
+
+            if (!listEl) return;
+            listEl.innerHTML = list.map(x => {
+                const when = x?.createdAt ? new Date(x.createdAt) : null;
+                const time = when && isFinite(when.getTime()) ? when.toLocaleString() : '';
+                return `
+                    <div class="p-3 rounded-2xl bg-white/5 border border-white/10">
+                        <div class="flex items-center justify-between gap-3">
+                            <p class="text-[10px] font-black text-slate-200">${formatZar(Number(x.amount || 0))}</p>
+                            <p class="text-[10px] text-slate-600 font-mono">${time}</p>
+                        </div>
+                        <p class="mt-1 text-[10px] text-slate-400 font-mono break-all">Ref: ${x.ref}</p>
+                        <div class="mt-2 flex flex-wrap gap-2">
+                            <button class="h-9 px-3 rounded-xl bg-white/5 border border-white/10 text-slate-200 text-[10px] font-black uppercase tracking-widest hover:text-white" onclick="window.copyText('${x.ref}')">Copy Ref</button>
+                            <button class="h-9 px-3 rounded-xl bg-orange-500 text-white text-[10px] font-black uppercase tracking-widest hover:bg-orange-400" onclick="window.confirmZarDeposit('${x.ref}')">Simulate Confirm</button>
+                            <button class="h-9 px-3 rounded-xl bg-white/5 border border-white/10 text-slate-200 text-[10px] font-black uppercase tracking-widest hover:text-white" onclick="window.cancelZarDeposit('${x.ref}')">Cancel</button>
+                        </div>
+                    </div>
+                `;
+            }).join('') || `<div class="p-4 rounded-2xl bg-white/5 border border-white/10 text-[10px] text-slate-500 font-mono">No pending deposits.</div>`;
+        }
+
+        function renderZarWithdrawUI() {
+            const sub = document.getElementById('zarWithdrawSub');
+            const hint = document.getElementById('zarWithdrawHint');
+            const listEl = document.getElementById('zarWithdrawList');
+            const max = zarAvailableBalance();
+            if (sub) sub.textContent = `${zarUserTag()} • Available ${formatZar(max)}`;
+            if (hint) hint.textContent = `Max withdraw: ${formatZar(max)}.`;
+
+            if (!listEl) return;
+            const list = pendingWithdrawals();
+            listEl.innerHTML = list.map(x => {
+                const when = x?.createdAt ? new Date(x.createdAt) : null;
+                const time = when && isFinite(when.getTime()) ? when.toLocaleString() : '';
+                return `
+                    <div class="p-3 rounded-2xl bg-white/5 border border-white/10">
+                        <div class="flex items-center justify-between gap-3">
+                            <p class="text-[10px] font-black text-slate-200">${formatZar(Number(x.amount || 0))}</p>
+                            <p class="text-[10px] text-slate-600 font-mono">${time}</p>
+                        </div>
+                        <p class="mt-1 text-[10px] text-slate-400 font-mono break-all">Ref: ${x.ref}</p>
+                        <div class="mt-2 flex flex-wrap gap-2">
+                            <button class="h-9 px-3 rounded-xl bg-white/5 border border-white/10 text-slate-200 text-[10px] font-black uppercase tracking-widest hover:text-white" onclick="window.copyText('${x.ref}')">Copy Ref</button>
+                            <button class="h-9 px-3 rounded-xl bg-orange-500 text-white text-[10px] font-black uppercase tracking-widest hover:bg-orange-400" onclick="window.confirmZarWithdraw('${x.ref}')">Simulate Complete</button>
+                            <button class="h-9 px-3 rounded-xl bg-white/5 border border-white/10 text-slate-200 text-[10px] font-black uppercase tracking-widest hover:text-white" onclick="window.cancelZarWithdraw('${x.ref}')">Cancel + Refund</button>
+                        </div>
+                    </div>
+                `;
+            }).join('') || `<div class="p-4 rounded-2xl bg-white/5 border border-white/10 text-[10px] text-slate-500 font-mono">No pending withdrawals.</div>`;
+        }
+
+        window.copyText = async (text) => {
+            try {
+                await navigator.clipboard.writeText((text || '').toString());
+                window.showToast('✓ COPIED');
+            } catch (_) {
+                window.showToast('⚠ COPY FAILED');
+            }
+        };
+
+        window.toggleZarDepositPending = () => {
+            setZarDepositPendingOpen(!zarDepositPendingOpen());
+        };
+
+        window.openZarDeposit = () => {
+            __openOverlay__('zarDepositOverlay');
+            renderZarDepositUI();
+        };
+
+        window.closeZarDeposit = (evt) => {
+            if (evt && evt.target && evt.currentTarget && evt.target !== evt.currentTarget) return;
+            __closeOverlay__('zarDepositOverlay');
+        };
+
+        window.openZarWithdraw = () => {
+            __openOverlay__('zarWithdrawOverlay');
+            renderZarWithdrawUI();
+        };
+
+        window.closeZarWithdraw = (evt) => {
+            if (evt && evt.target && evt.currentTarget && evt.target !== evt.currentTarget) return;
+            __closeOverlay__('zarWithdrawOverlay');
+        };
+
+        window.zarDepositMax = () => {
+            const el = document.getElementById('zarDepositAmount');
+            if (el) el.value = (Math.floor(ZAR_DEPOSIT_CAP * 100) / 100).toString();
+        };
+
+        window.zarWithdrawMax = () => {
+            const el = document.getElementById('zarWithdrawAmount');
+            if (el) el.value = (Math.floor(zarAvailableBalance() * 100) / 100).toString();
+        };
+
+        window.createZarDepositIntent = (amountZar) => {
+            const amt = sanitizeMoney(amountZar);
+            if (!amt) throw new Error('Amount required');
+            if (amt > ZAR_DEPOSIT_CAP) throw new Error(`Deposit exceeds cap (${formatZar(ZAR_DEPOSIT_CAP)})`);
+
+            const intent = { ref: makeZarRef('ZAR-DEP'), amount: amt, createdAt: new Date().toISOString(), uid: state.user?.uid || 'guest', status: 'pending' };
+            ensurePaymentState();
+            state.payments.pendingZarDeposits.unshift(intent);
+            state.payments.pendingZarDeposits = state.payments.pendingZarDeposits.slice(0, 25);
+            pushActivity('DEPOSIT_PENDING', 'ZAR', `${formatZar(amt)} pending • Ref ${intent.ref}`);
+            persistLocalState();
+            renderInvestmentDashboard();
+            renderPimPanel();
+            return intent;
+        };
+
+        window.confirmZarDeposit = (ref) => {
+            const r = (ref || '').toString().trim();
+            if (!r) return window.showToast('⚠ MISSING REF');
+            ensurePaymentState();
+            const idx = state.payments.pendingZarDeposits.findIndex(x => x?.ref === r);
+            if (idx < 0) return window.showToast('⚠ UNKNOWN REF');
+            const intent = state.payments.pendingZarDeposits[idx];
+            const amt = Number(intent?.amount || 0);
+            state.payments.pendingZarDeposits.splice(idx, 1);
+            state.zar = Number(state.zar || 0) + amt;
+            pushActivity('DEPOSIT', 'ZAR', `${formatZar(amt)} confirmed • Ref ${r}`);
+            persistLocalState();
+            renderInvestmentDashboard();
+            renderPimPanel();
+            window.showToast(`✓ DEPOSIT CONFIRMED: ${formatZar(amt)}`);
+            renderZarDepositUI();
+        };
+
+        window.cancelZarDeposit = (ref) => {
+            const r = (ref || '').toString().trim();
+            if (!r) return;
+            ensurePaymentState();
+            const before = state.payments.pendingZarDeposits.length;
+            state.payments.pendingZarDeposits = state.payments.pendingZarDeposits.filter(x => x?.ref !== r);
+            if (state.payments.pendingZarDeposits.length !== before) {
+                pushActivity('DEPOSIT_CANCEL', 'ZAR', `Deposit intent cancelled • Ref ${r}`);
+                persistLocalState();
+                renderInvestmentDashboard();
+                renderPimPanel();
+                window.showToast('✓ DEPOSIT INTENT CANCELLED');
+            }
+            renderZarDepositUI();
+        };
+
+        window.createZarWithdrawIntent = (amountZar) => {
+            const amt = sanitizeMoney(amountZar);
+            if (!amt) throw new Error('Amount required');
+            const bal = Number(state.zar || 0);
+            if (amt > bal) throw new Error('Insufficient cash');
+
+            // Reserve by deducting immediately; cancel will refund.
+            state.zar = bal - amt;
+
+            const intent = { ref: makeZarRef('ZAR-WD'), amount: amt, createdAt: new Date().toISOString(), uid: state.user?.uid || 'guest', status: 'pending' };
+            ensurePaymentState();
+            state.payments.pendingZarWithdrawals.unshift(intent);
+            state.payments.pendingZarWithdrawals = state.payments.pendingZarWithdrawals.slice(0, 25);
+            pushActivity('WITHDRAW_PENDING', 'ZAR', `${formatZar(amt)} pending • Ref ${intent.ref}`);
+            persistLocalState();
+            renderInvestmentDashboard();
+            renderPimPanel();
+            return intent;
+        };
+
+        window.confirmZarWithdraw = (ref) => {
+            const r = (ref || '').toString().trim();
+            if (!r) return window.showToast('⚠ MISSING REF');
+            ensurePaymentState();
+            const idx = state.payments.pendingZarWithdrawals.findIndex(x => x?.ref === r);
+            if (idx < 0) return window.showToast('⚠ UNKNOWN REF');
+            const intent = state.payments.pendingZarWithdrawals[idx];
+            const amt = Number(intent?.amount || 0);
+            state.payments.pendingZarWithdrawals.splice(idx, 1);
+            pushActivity('WITHDRAW', 'ZAR', `${formatZar(amt)} completed • Ref ${r}`);
+            persistLocalState();
+            renderInvestmentDashboard();
+            renderPimPanel();
+            window.showToast(`✓ WITHDRAW COMPLETED: ${formatZar(amt)}`);
+            renderZarWithdrawUI();
+        };
+
+        window.cancelZarWithdraw = (ref) => {
+            const r = (ref || '').toString().trim();
+            if (!r) return;
+            ensurePaymentState();
+            const idx = state.payments.pendingZarWithdrawals.findIndex(x => x?.ref === r);
+            if (idx < 0) return;
+            const intent = state.payments.pendingZarWithdrawals[idx];
+            const amt = Number(intent?.amount || 0);
+            state.payments.pendingZarWithdrawals.splice(idx, 1);
+            state.zar = Number(state.zar || 0) + amt;
+            pushActivity('WITHDRAW_CANCEL', 'ZAR', `Withdraw cancelled + refunded ${formatZar(amt)} • Ref ${r}`);
+            persistLocalState();
+            renderInvestmentDashboard();
+            renderPimPanel();
+            window.showToast('✓ WITHDRAW CANCELLED + REFUNDED');
+            renderZarWithdrawUI();
+        };
+
+        // UI helpers
+        window.createZarDepositFromUI = () => {
+            try {
+                const el = document.getElementById('zarDepositAmount');
+                const amt = sanitizeMoney(el?.value);
+                if (!amt) return window.showToast('⚠ ENTER AMOUNT');
+                const intent = window.createZarDepositIntent(amt);
+                if (el) el.value = '';
+                window.showToast(`✓ DEPOSIT INTENT: ${formatZar(intent.amount)}`);
+                renderZarDepositUI();
+            } catch (e) {
+                window.showToast('✗ ' + (e?.message || 'FAILED'));
+            }
+        };
+
+        window.createZarWithdrawFromUI = () => {
+            try {
+                const el = document.getElementById('zarWithdrawAmount');
+                const amt = sanitizeMoney(el?.value);
+                if (!amt) return window.showToast('⚠ ENTER AMOUNT');
+                const intent = window.createZarWithdrawIntent(amt);
+                if (el) el.value = '';
+                window.showToast(`✓ WITHDRAW REQUEST: ${formatZar(intent.amount)}`);
+                renderZarWithdrawUI();
+            } catch (e) {
+                window.showToast('✗ ' + (e?.message || 'FAILED'));
+            }
+        };
+
+        window.copyLatestZarDepositRef = () => {
+            const ref = pendingDeposits()?.[0]?.ref || '';
+            if (!ref) return window.showToast('⚠ NO REF');
+            window.copyText(ref);
+        };
+
+        window.copyLatestZarWithdrawRef = () => {
+            const ref = pendingWithdrawals()?.[0]?.ref || '';
+            if (!ref) return window.showToast('⚠ NO REF');
+            window.copyText(ref);
         };
 
         window.invBuy = () => {
@@ -1503,14 +2010,11 @@
             if (pimEl) pimEl.innerText = pimBal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
             const countEl = document.getElementById('pimPanelWalletCount');
-            if (countEl) countEl.innerText = `${state.pimWallets?.length || 0} wallet IDs minted`;
+            if (countEl) countEl.innerText = 'Max supply: 10,000,000 PIM (on-chain)';
 
             const listEl = document.getElementById('pimPanelWalletList');
             if (listEl) {
-                const ids = (state.pimWallets || []).slice(-12).reverse();
-                listEl.innerHTML = ids.length
-                    ? ids.map(id => `<div class="px-3 py-2 rounded-xl bg-white/5 border border-white/10 font-mono text-[10px] text-orange-200 break-all">${id}</div>`).join('')
-                    : '<div class="text-[10px] text-slate-400">No wallet IDs yet. Mint to create IDs.</div>';
+                listEl.innerHTML = '<div class="text-[10px] text-slate-400">Minting happens in PIM AR Wallet.</div>';
             }
         }
 
@@ -1571,19 +2075,13 @@
         };
 
         window.openCart = () => {
-            const overlay = document.getElementById('cartOverlay');
-            if (!overlay) return;
-            overlay.classList.add('active');
-            overlay.setAttribute('aria-hidden', 'false');
+            __openOverlay__('cartOverlay');
             updateCartUI();
         };
 
         window.closeCart = (evt) => {
             if (evt && evt.target && evt.currentTarget && evt.target !== evt.currentTarget) return;
-            const overlay = document.getElementById('cartOverlay');
-            if (!overlay) return;
-            overlay.classList.remove('active');
-            overlay.setAttribute('aria-hidden', 'true');
+            __closeOverlay__('cartOverlay');
         };
 
         window.openCheckout = () => {
@@ -1593,10 +2091,7 @@
                 window.showToast('⚠ ADD ITEMS BEFORE CHECKOUT');
                 return;
             }
-            const overlay = document.getElementById('checkoutOverlay');
-            if (!overlay) return;
-            overlay.classList.add('active');
-            overlay.setAttribute('aria-hidden', 'false');
+            __openOverlay__('checkoutOverlay');
 
             const c = state.shop.customer || {};
             const set = (id, val) => {
@@ -1613,10 +2108,7 @@
 
         window.closeCheckout = (evt) => {
             if (evt && evt.target && evt.currentTarget && evt.target !== evt.currentTarget) return;
-            const overlay = document.getElementById('checkoutOverlay');
-            if (!overlay) return;
-            overlay.classList.remove('active');
-            overlay.setAttribute('aria-hidden', 'true');
+            __closeOverlay__('checkoutOverlay');
         };
 
         window.submitOrder = () => {
@@ -1675,6 +2167,8 @@
             if (e.key === 'Escape') {
                 window.closeCheckout();
                 window.closeCart();
+                window.closeZarDeposit();
+                window.closeZarWithdraw();
                 window.togglePimPanel(false);
             }
         });
@@ -1716,9 +2210,18 @@
             return b64;
         }
 
+        function hasSubtleCrypto() {
+            return !!(window.crypto && window.crypto.subtle && typeof window.crypto.subtle.digest === 'function');
+        }
+
         async function createCodeChallenge(verifier) {
+            // In insecure contexts (often `file://`), crypto.subtle can be unavailable.
+            // Fall back to PKCE "plain" so the login button still redirects.
+            if (!hasSubtleCrypto()) {
+                return { challenge: verifier, method: 'plain' };
+            }
             const hashBytes = await sha256(verifier);
-            return base64Url(hashBytes);
+            return { challenge: base64Url(hashBytes), method: 'S256' };
         }
 
         function getRedirectUri() {
@@ -1780,7 +2283,7 @@
 
                 const stateStr = randomString(48);
                 const verifier = randomString(64);
-                const challenge = await createCodeChallenge(verifier);
+                const { challenge, method } = await createCodeChallenge(verifier);
                 const redirectUri = getRedirectUri();
 
                 console.log('redirectUri:', redirectUri);
@@ -1801,15 +2304,13 @@
                 authorize.searchParams.set('state', stateStr);
                 authorize.searchParams.set('scope', GITLAB_SCOPES.join(' '));
                 authorize.searchParams.set('code_challenge', challenge);
-                authorize.searchParams.set('code_challenge_method', 'S256');
+                authorize.searchParams.set('code_challenge_method', method);
 
                 const authUrl = authorize.toString();
                 console.log('Redirecting to GitLab OAuth:', authUrl);
                 
-                // Use a small delay to ensure logs are flushed
-                setTimeout(() => {
-                    window.location.href = authUrl;
-                }, 100);
+                // Prefer assign() for a clear, user-gesture navigation.
+                window.location.assign(authUrl);
             } catch (e) {
                 console.error('Auth start error:', e);
                 console.error('Error stack:', e.stack);
@@ -2122,15 +2623,12 @@
             <div class="p-5 sm:p-6 rounded-2xl sm:rounded-3xl bg-gradient-to-br from-[#20161a] to-[#0f0a0c] border border-orange-500/20 box-3d">
                 <div class="flex items-center justify-between mb-4">
                     <div>
-                        <p class="text-[10px] sm:text-[11px] font-black text-orange-400 uppercase tracking-[0.25em]">PIM On-Chain Wallets</p>
-                        <p class="text-xs sm:text-sm text-white font-black">${walletCount} wallet IDs minted</p>
+                        <p class="text-[10px] sm:text-[11px] font-black text-orange-400 uppercase tracking-[0.25em]">PIM Token</p>
+                        <p class="text-xs sm:text-sm text-white font-black">On-chain minting</p>
                     </div>
                     <button onclick="window.mintPIM()" class="px-3 sm:px-4 py-2 rounded-xl bg-orange-500 text-white text-[10px] sm:text-[11px] font-black uppercase tracking-widest shadow-[0_10px_25px_rgba(252,109,38,0.25)] hover:bg-orange-400 transition-colors">Mint PIM</button>
                 </div>
-                <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3">
-                    ${walletList || '<div class="text-[10px] sm:text-[11px] text-slate-500">No wallets yet. Mint to create PIM IDs.</div>'}
-                </div>
-                <p class="mt-3 text-[9px] sm:text-[10px] text-orange-200">Rate: 1 PIM = R2 • Each PIM mints a unique wallet ID.</p>
+                <p class="mt-3 text-[9px] sm:text-[10px] text-orange-200">Mint PIM on-chain via the PIM AR Wallet (local/testnet).</p>
             </div>`;
 
             container.innerHTML = html;
@@ -2144,26 +2642,10 @@
             return 'PIM-' + Math.random().toString(16).slice(2,10) + Math.random().toString(16).slice(2,10);
         }
 
-        // Mint PIM tokens
-        window.mintPIM = async () => {
-            const input = prompt('💎 How many PIM tokens to mint?\n\nRate: 1 PIM = R2\nYour Balance: R' + state.zar.toFixed(2));
-            const qty = parseInt(input, 10);
-            if (!qty || qty <= 0) return window.showToast('⚠ Enter valid quantity');
-            const cost = qty * 2;
-
-            if (state.zar < cost) return window.showToast('✗ INSUFFICIENT ZAR');
-
-            const newWallets = Array.from({length: qty}, () => generateWalletId());
-            state.pimWallets = [...state.pimWallets, ...newWallets];
-            
-            // Deduct ZAR and add PIM holdings
-            state.zar -= cost;
-            state.holdings.pim = (state.holdings.pim || 0) + qty;
-            
-            persistLocalState();
-            updateUI();
-            renderPimPanel();
-            window.showToast(`✓ MINTED ${qty} PIM @ R${cost}`);
+        // Mint PIM tokens (on-chain)
+        window.mintPIM = () => {
+            window.showToast('Open PIM AR Wallet to mint on-chain');
+            try { window.open('../pim-ar-wallet/', '_blank'); } catch (_) {}
         };
 
         // Auto-save state every 5s

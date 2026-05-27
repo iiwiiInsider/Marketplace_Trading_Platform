@@ -866,7 +866,10 @@
                 <p class="text-[9px] font-black uppercase tracking-widest text-slate-500">EVM Wallet</p>
                 <p id="evmStatus" class="mt-1 text-[11px] text-slate-300">Not connected</p>
               </div>
-              <button id="evmConnectBtn" class="btn h-11 px-5" onclick="window.connectEvmWallet?.()">Connect</button>
+              <div class="flex items-center gap-2">
+                <button id="evmAddHardhatBtn" class="btn2 h-11 px-4" onclick="window.addHardhatNetworkFromUi?.()">Add Hardhat</button>
+                <button id="evmConnectBtn" class="btn h-11 px-5" onclick="window.connectEvmWallet?.()">Connect</button>
+              </div>
             </div>
 
             <div class="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -886,6 +889,16 @@
                 <p class="text-[9px] font-black uppercase tracking-widest text-slate-500">PIM (ERC-20)</p>
                 <p id="evmPim" class="mt-1 text-[11px] text-slate-200">—</p>
               </div>
+            </div>
+
+            <div class="mt-3 p-3 rounded-2xl bg-black/30 border border-white/10">
+              <p class="text-[9px] font-black uppercase tracking-widest text-slate-500">PIM supply</p>
+              <p id="evmPimSupply" class="mt-1 text-[11px] text-slate-200">—</p>
+            </div>
+
+            <div class="mt-3 flex flex-col sm:flex-row gap-2">
+              <input id="evmPimMintAmount" inputmode="decimal" class="flex-1 h-11 px-4 rounded-2xl bg-black/30 border border-white/10 text-[12px] text-white outline-none focus:border-orange-500/40" placeholder="Mint PIM amount (e.g. 1000)" />
+              <button id="evmPimMintBtn" class="btn h-11 px-5" onclick="window.mintPimFromUi?.()">Mint</button>
             </div>
 
             <p class="mt-2 text-[11px] text-slate-400">Uses Web3.js with an injected provider (MetaMask / Wallet extension). Set the PIM contract address per chain in <span class="font-mono">pim-ar-wallet/src/config/pimToken.js</span>.</p>
@@ -1571,38 +1584,53 @@
       return base64Url(h);
     }
 
+    function hasSubtleCrypto() {
+      return !!(window.crypto && window.crypto.subtle && typeof window.crypto.subtle.digest === 'function');
+    }
+
     function redirectUri() {
       // trailing slash matters if you registered it that way
       return location.origin + location.pathname;
     }
 
     window.startLogin = async () => {
-      const base = document.getElementById('glBase').value.trim().replace(/\/$/, '');
-      const clientId = document.getElementById('glClient').value.trim();
-      const secret = document.getElementById('glSecret').value.trim();
-      if (!base || !clientId) return toast('Enter GitLab URL + Application ID');
+      try {
+        const base = document.getElementById('glBase').value.trim().replace(/\/$/, '');
+        const clientId = document.getElementById('glClient').value.trim();
+        const secret = document.getElementById('glSecret').value.trim();
+        if (!base || !clientId) return toast('Enter GitLab URL + Application ID');
 
-      const stateStr = uid(28);
-      const verifier = uid(64);
-      const challenge = await pkceChallenge(verifier);
+        const stateStr = uid(28);
+        const verifier = uid(64);
 
-      sessionStorage.setItem('pim_gl_state', stateStr);
-      sessionStorage.setItem('pim_gl_verifier', verifier);
-      sessionStorage.setItem('pim_gl_base', base);
-      sessionStorage.setItem('pim_gl_client', clientId);
-      sessionStorage.setItem('pim_gl_redirect', redirectUri());
-      if (secret) sessionStorage.setItem('pim_gl_secret', secret);
+        let challenge = verifier;
+        let method = 'plain';
+        if (hasSubtleCrypto()) {
+          challenge = await pkceChallenge(verifier);
+          method = 'S256';
+        }
 
-      const u = new URL(base + '/oauth/authorize');
-      u.searchParams.set('client_id', clientId);
-      u.searchParams.set('redirect_uri', redirectUri());
-      u.searchParams.set('response_type', 'code');
-      u.searchParams.set('state', stateStr);
-      u.searchParams.set('scope', GL_SCOPES.join(' '));
-      u.searchParams.set('code_challenge', challenge);
-      u.searchParams.set('code_challenge_method', 'S256');
+        sessionStorage.setItem('pim_gl_state', stateStr);
+        sessionStorage.setItem('pim_gl_verifier', verifier);
+        sessionStorage.setItem('pim_gl_base', base);
+        sessionStorage.setItem('pim_gl_client', clientId);
+        sessionStorage.setItem('pim_gl_redirect', redirectUri());
+        if (secret) sessionStorage.setItem('pim_gl_secret', secret);
 
-      location.href = u.toString();
+        const u = new URL(base + '/oauth/authorize');
+        u.searchParams.set('client_id', clientId);
+        u.searchParams.set('redirect_uri', redirectUri());
+        u.searchParams.set('response_type', 'code');
+        u.searchParams.set('state', stateStr);
+        u.searchParams.set('scope', GL_SCOPES.join(' '));
+        u.searchParams.set('code_challenge', challenge);
+        u.searchParams.set('code_challenge_method', method);
+
+        location.assign(u.toString());
+      } catch (e) {
+        console.error('Login start failed:', e);
+        toast('Login failed to start. Open via http://localhost (not file://).');
+      }
     };
 
     async function handleOAuthRedirect() {
