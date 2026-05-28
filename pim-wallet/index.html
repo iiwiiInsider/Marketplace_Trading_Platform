@@ -2292,9 +2292,11 @@
                 sessionStorage.setItem('gitlab_code_verifier', verifier);
                 sessionStorage.setItem('gitlab_redirect_uri', redirectUri);
                 if (clientSecret) {
-                    sessionStorage.setItem('gitlab_client_secret', clientSecret);
+                    // Do not persist secrets in browser storage.
+                    // Keep only in ephemeral runtime memory for this page lifecycle.
+                    window.__gitlab_runtime_client_secret = clientSecret;
                 } else {
-                    sessionStorage.removeItem('gitlab_client_secret');
+                    delete window.__gitlab_runtime_client_secret;
                 }
 
                 const authorize = new URL(baseUrl + '/oauth/authorize');
